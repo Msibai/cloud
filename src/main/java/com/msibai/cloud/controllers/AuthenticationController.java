@@ -2,6 +2,7 @@ package com.msibai.cloud.controllers;
 
 import com.msibai.cloud.Services.AuthenticationService;
 import com.msibai.cloud.dtos.JwtAuthenticationResponseDto;
+import com.msibai.cloud.dtos.SignInDto;
 import com.msibai.cloud.dtos.SignUpDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,11 +15,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthenticationController {
 
-    private final AuthenticationService authenticationService;
+  private final AuthenticationService authenticationService;
 
-    @PostMapping("/signup")
-    public JwtAuthenticationResponseDto signUp(@RequestBody SignUpDto signUpDto) {
+  @PostMapping("/signup")
+  public JwtAuthenticationResponseDto signUp(@RequestBody SignUpDto signUpDto) {
 
-        return authenticationService.signUp(signUpDto);
-    }
+    return authenticationService.signUp(signUpDto);
+  }
+
+  @PostMapping("/login")
+  public JwtAuthenticationResponseDto signIn(@RequestBody SignInDto signInDto) {
+
+    return authenticationService.signIn(signInDto);
+  }
 }
