@@ -6,10 +6,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.msibai.cloud.dtos.JwtAuthenticationResponseDto;
 import com.msibai.cloud.dtos.SignInDto;
 import com.msibai.cloud.dtos.SignUpDto;
-import com.msibai.cloud.entities.Role;
-import com.msibai.cloud.entities.User;
 import com.msibai.cloud.repositories.UserRepository;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -22,6 +23,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class AuthenticationControllerIntegrationTest {
   @Container @ServiceConnection
   static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:latest");
@@ -31,6 +33,7 @@ class AuthenticationControllerIntegrationTest {
   @Autowired PasswordEncoder passwordEncoder;
 
   @Test
+  @Order(1)
   public void testSignUpEndpoint() {
     SignUpDto signUpDto = new SignUpDto("first", "last", "test@test.com", "password", "password");
 
@@ -49,17 +52,8 @@ class AuthenticationControllerIntegrationTest {
   }
 
   @Test
+  @Order(2)
   public void testSignInEndpoint() {
-
-    String rawPassword = "password";
-    String encodedPassword = passwordEncoder.encode(rawPassword);
-    User testUser = new User();
-    testUser.setFirstName("first");
-    testUser.setLastName("last");
-    testUser.setEmail("test@test.com");
-    testUser.setEncodedPassword(encodedPassword);
-    testUser.setRole(Role.ROLE_USER);
-    userRepository.save(testUser);
 
     SignInDto signInDto = new SignInDto("test@test.com", "password");
 
@@ -75,7 +69,5 @@ class AuthenticationControllerIntegrationTest {
     assertNotNull(responseDto);
     assertThat(responseDto.getToken()).isNotNull();
     assertThat(responseDto.getToken()).startsWith("eyJ");
-
-    userRepository.deleteAll();
   }
 }
