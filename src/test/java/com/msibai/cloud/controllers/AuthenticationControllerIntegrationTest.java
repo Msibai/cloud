@@ -26,7 +26,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class AuthenticationControllerIntegrationTest {
   @Container @ServiceConnection
-  static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:latest");
+  static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16.1");
 
   @Autowired TestRestTemplate restTemplate;
   @Autowired UserRepository userRepository;
