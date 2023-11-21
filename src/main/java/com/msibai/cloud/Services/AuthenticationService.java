@@ -7,6 +7,7 @@ import com.msibai.cloud.entities.Role;
 import com.msibai.cloud.entities.User;
 import com.msibai.cloud.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,6 +25,11 @@ public class AuthenticationService {
 
   public JwtAuthenticationResponseDto signUp(SignUpDto signUpDto) {
 
+    if (isEmailExists(signUpDto.getEmail())) {
+      throw new DuplicateKeyException(
+          "There is an account with that email address: " + signUpDto.getEmail());
+    }
+
     var user =
         User.builder()
             .firstName(signUpDto.getFirstName())
@@ -37,6 +43,11 @@ public class AuthenticationService {
     var jwt = jwtService.generateToken(user);
 
     return JwtAuthenticationResponseDto.builder().token(jwt).build();
+  }
+
+  private boolean isEmailExists(String email) {
+
+    return userRepository.findUserByEmail(email).isPresent();
   }
 
   public JwtAuthenticationResponseDto signIn(SignInDto signInDto) {
