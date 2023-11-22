@@ -37,7 +37,7 @@ class JwtAuthenticationFilterTest {
 
   @Test
   void doFilterInternalWithValidToken() throws ServletException, IOException {
-    when(request.getHeader("Authentication")).thenReturn("Bearer validToken");
+    when(request.getHeader("Authorization")).thenReturn("Bearer validToken");
     when(jwtService.extractUsername("validToken")).thenReturn("testUser@test.com");
     when(userDetailsService.loadUserByUsername("testUser@test.com"))
         .thenReturn(mock(UserDetails.class));
@@ -53,7 +53,7 @@ class JwtAuthenticationFilterTest {
 
   @Test
   void doFilterInternalWithInvalidToken() throws ServletException, IOException {
-    when(request.getHeader("Authentication")).thenReturn("Bearer invalidToken");
+    when(request.getHeader("Authorization")).thenReturn("Bearer invalidToken");
 
     jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
 
@@ -65,7 +65,7 @@ class JwtAuthenticationFilterTest {
 
   @Test
   void doFilterInternalWithNoToken() throws ServletException, IOException {
-    when(request.getHeader("Authentication")).thenReturn(null);
+    when(request.getHeader("Authorization")).thenReturn(null);
 
     jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
 
