@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -32,5 +33,16 @@ class CustomExceptionHandlerTest {
 
     assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     assertEquals("Validation failed: Invalid value", responseEntity.getBody());
+  }
+
+  @Test
+  void testHandleDuplicateKeyException() {
+    DuplicateKeyException exception = mock(DuplicateKeyException.class);
+    when(exception.getMessage()).thenReturn("The provided key already exists in the database");
+
+    ResponseEntity<String> responseEntity = customExceptionHandler.handleDuplicateKeyException(exception);
+
+    assertEquals(HttpStatus.CONFLICT, responseEntity.getStatusCode());
+    assertEquals("Duplicate key violation: The provided key already exists in the database", responseEntity.getBody());
   }
 }
