@@ -2,6 +2,7 @@ package com.msibai.cloud.handlers;
 
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.*;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -32,5 +33,12 @@ public class CustomExceptionHandler {
     String errorMessage = "Duplicate key violation: " + ex.getMessage();
 
     return ResponseEntity.status(HttpStatus.CONFLICT).body(errorMessage);
+  }
+
+  @ExceptionHandler(BadCredentialsException.class)
+  public ResponseEntity<String> handleBadCredentialsException(BadCredentialsException ex) {
+    String errorMessage = "Access Denied: Invalid username or password. " + ex.getMessage();
+
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorMessage);
   }
 }

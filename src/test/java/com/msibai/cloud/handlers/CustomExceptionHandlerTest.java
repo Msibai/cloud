@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -40,9 +41,24 @@ class CustomExceptionHandlerTest {
     DuplicateKeyException exception = mock(DuplicateKeyException.class);
     when(exception.getMessage()).thenReturn("The provided key already exists in the database");
 
-    ResponseEntity<String> responseEntity = customExceptionHandler.handleDuplicateKeyException(exception);
+    ResponseEntity<String> responseEntity =
+        customExceptionHandler.handleDuplicateKeyException(exception);
 
     assertEquals(HttpStatus.CONFLICT, responseEntity.getStatusCode());
-    assertEquals("Duplicate key violation: The provided key already exists in the database", responseEntity.getBody());
+    assertEquals(
+        "Duplicate key violation: The provided key already exists in the database",
+        responseEntity.getBody());
+  }
+
+  @Test
+  void testHandleBadCredentialsException() {
+    BadCredentialsException exception = mock(BadCredentialsException.class);
+    when(exception.getMessage()).thenReturn("Bad credentials");
+    ResponseEntity<String> response =
+        customExceptionHandler.handleBadCredentialsException(exception);
+
+    assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+    assertEquals(
+        "Access Denied: Invalid username or password. Bad credentials", response.getBody());
   }
 }
