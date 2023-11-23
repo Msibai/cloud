@@ -2,7 +2,7 @@ package com.msibai.cloud.config;
 
 import com.msibai.cloud.Services.UserService;
 import com.msibai.cloud.filters.JwtAuthenticationFilter;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -19,14 +19,23 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
-  private final JwtAuthenticationFilter jwtAuthenticationFilter;
   private final UserService userService;
+
+  private final HandlerExceptionResolver exceptionResolver;
+
+  public SecurityConfig(
+      UserService userService,
+      @Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver) {
+
+    this.userService = userService;
+    this.exceptionResolver = exceptionResolver;
+  }
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -41,7 +50,7 @@ public class SecurityConfig {
                     .anyRequest()
                     .authenticated())
         .authenticationProvider(authenticationProvider())
-        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
     return http.build();
   }
 
@@ -53,6 +62,11 @@ public class SecurityConfig {
     authProvider.setPasswordEncoder(passwordEncoder());
 
     return authProvider;
+  }
+
+  @Bean
+  public JwtAuthenticationFilter jwtAuthenticationFilter() {
+    return new JwtAuthenticationFilter(exceptionResolver);
   }
 
   @Bean

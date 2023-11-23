@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -60,5 +63,39 @@ class CustomExceptionHandlerTest {
     assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
     assertEquals(
         "Access Denied: Invalid username or password. Bad credentials", response.getBody());
+  }
+
+  @Test
+  void testHandleSignatureException() {
+    SignatureException exception = mock(SignatureException.class);
+    when(exception.getMessage()).thenReturn("Signature is invalid");
+    ResponseEntity<String> response = customExceptionHandler.handleSignatureException(exception);
+
+    assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+    assertEquals(
+        "Access Denied: Token signature is invalid - Signature is invalid", response.getBody());
+  }
+
+  @Test
+  void testHandleExpiredJwtException() {
+    ExpiredJwtException exception = mock(ExpiredJwtException.class);
+    when(exception.getMessage()).thenReturn("Token has expired");
+
+    ResponseEntity<String> response = customExceptionHandler.handleExpiredJwtException(exception);
+
+    assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+    assertEquals("Access Denied: Token has expired - Token has expired", response.getBody());
+  }
+
+  @Test
+  void testHandleMalformedJwtException() {
+    MalformedJwtException mockException = mock(MalformedJwtException.class);
+    mockException.initCause(null);
+
+    ResponseEntity<String> response =
+        customExceptionHandler.handleMalformedJwtException(mockException);
+
+    assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+    assertEquals("Access Denied: Malformed JWT", response.getBody());
   }
 }

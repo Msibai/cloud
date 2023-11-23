@@ -8,35 +8,42 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 @ExtendWith({MockitoExtension.class})
 class JwtAuthenticationFilterTest {
   @Mock JwtService jwtService;
-
   @Mock UserDetailsService userDetailsService;
-
-  @InjectMocks JwtAuthenticationFilter jwtAuthenticationFilter;
-  private HttpServletRequest request;
-  private HttpServletResponse response;
-  private FilterChain filterChain;
+  @Mock HandlerExceptionResolver exceptionResolver;
+  private JwtAuthenticationFilter jwtAuthenticationFilter;
+  @Mock private HttpServletRequest request;
+  @Mock private HttpServletResponse response;
+  @Mock private FilterChain filterChain;
 
   @BeforeEach
-  void setUp() {
-    request = mock(HttpServletRequest.class);
-    response = mock(HttpServletResponse.class);
-    filterChain = mock(FilterChain.class);
+  void setUp() throws IllegalAccessException, NoSuchFieldException {
+    jwtAuthenticationFilter = new JwtAuthenticationFilter(exceptionResolver);
+
+    Field jwtServiceField = JwtAuthenticationFilter.class.getDeclaredField("jwtService");
+    jwtServiceField.setAccessible(true);
+    jwtServiceField.set(jwtAuthenticationFilter, jwtService);
+
+    Field userDetailsServiceField =
+        JwtAuthenticationFilter.class.getDeclaredField("userDetailsService");
+    userDetailsServiceField.setAccessible(true);
+    userDetailsServiceField.set(jwtAuthenticationFilter, userDetailsService);
   }
 
   @Test
-  void doFilterInternalWithValidToken() throws ServletException, IOException {
+  void testDoFilterInternalWithValidToken() throws ServletException, IOException {
     when(request.getHeader("Authorization")).thenReturn("Bearer validToken");
     when(jwtService.extractUsername("validToken")).thenReturn("testUser@test.com");
     when(userDetailsService.loadUserByUsername("testUser@test.com"))
@@ -52,7 +59,7 @@ class JwtAuthenticationFilterTest {
   }
 
   @Test
-  void doFilterInternalWithInvalidToken() throws ServletException, IOException {
+  void testDoFilterInternalWithInvalidToken() throws ServletException, IOException {
     when(request.getHeader("Authorization")).thenReturn("Bearer invalidToken");
 
     jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
@@ -64,7 +71,7 @@ class JwtAuthenticationFilterTest {
   }
 
   @Test
-  void doFilterInternalWithNoToken() throws ServletException, IOException {
+  void testDoFilterInternalWithNoToken() throws ServletException, IOException {
     when(request.getHeader("Authorization")).thenReturn(null);
 
     jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
