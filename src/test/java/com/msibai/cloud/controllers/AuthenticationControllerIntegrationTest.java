@@ -45,7 +45,7 @@ class AuthenticationControllerIntegrationTest {
         restTemplate.postForEntity("/api/v1/signup", request, JwtAuthenticationResponseDto.class);
     JwtAuthenticationResponseDto responseDto = responseEntity.getBody();
 
-    assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    assertEquals(HttpStatus.CREATED, responseEntity.getStatusCode());
     assertNotNull(responseDto);
     assertThat(responseDto.getToken()).isNotNull();
     assertThat(responseDto.getToken()).startsWith("eyJ");

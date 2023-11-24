@@ -6,10 +6,8 @@ import com.msibai.cloud.dtos.SignInDto;
 import com.msibai.cloud.dtos.SignUpDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -19,6 +17,7 @@ public class AuthenticationController {
   private final AuthenticationService authenticationService;
 
   @PostMapping("/signup")
+  @ResponseStatus(HttpStatus.CREATED)
   public JwtAuthenticationResponseDto signUp(@RequestBody @Valid SignUpDto signUpDto) {
 
     return authenticationService.signUp(signUpDto);
