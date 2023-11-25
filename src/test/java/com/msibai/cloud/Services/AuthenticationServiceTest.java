@@ -42,6 +42,7 @@ class AuthenticationServiceTest {
     when(passwordEncoder.encode(any(CharSequence.class))).thenReturn("encodedPassword");
     User mockUser =
         User.builder()
+            .id(UUID.randomUUID())
             .firstName(signUpDto.getFirstName())
             .lastName(signUpDto.getLastName())
             .email(signUpDto.getEmail())
@@ -49,7 +50,7 @@ class AuthenticationServiceTest {
             .role(Role.ROLE_USER)
             .build();
     when(userService.save(any(User.class))).thenReturn(mockUser);
-    when(jwtService.generateToken(any(User.class))).thenReturn("mockedJwtToken");
+    when(jwtService.generateToken(any(User.class), any(UUID.class))).thenReturn("mockedJwtToken");
 
     JwtAuthenticationResponseDto response = authenticationService.signUp(signUpDto);
 
@@ -68,7 +69,8 @@ class AuthenticationServiceTest {
         new UsernamePasswordAuthenticationToken(signInDto.getEmail(), signInDto.getPassword());
 
     when(authenticationManager.authenticate(any(Authentication.class))).thenReturn(authentication);
-    when(jwtService.generateToken(any(UserDetails.class))).thenReturn("mockedJwtToken");
+    when(jwtService.generateToken(any(UserDetails.class), any(UUID.class)))
+        .thenReturn("mockedJwtToken");
 
     JwtAuthenticationResponseDto response = authenticationService.signIn(signInDto);
 
