@@ -2,7 +2,6 @@ package com.msibai.cloud.entities;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Size;
 import java.util.UUID;
 import lombok.*;
 
@@ -18,7 +17,6 @@ public class Folder {
   private UUID id;
 
   @NonNull
-  @Size(min = 1, max = 7, message = "Name length must be between 3 and 30 characters")
   @NotEmpty
   @Column(unique = true)
   private String folderName;

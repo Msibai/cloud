@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public interface FolderService {
-  void createFolderForUser(String folderName, String token);
+  Folder createFolderForUser(String folderName, String token);
 
   Folder findFolderByIdAndUserId(UUID folderId, String token);
 
