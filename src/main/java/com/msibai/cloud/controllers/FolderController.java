@@ -1,6 +1,9 @@
 package com.msibai.cloud.controllers;
 
 import com.msibai.cloud.Services.impl.FolderServiceImpl;
+import com.msibai.cloud.entities.Folder;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,5 +27,25 @@ public class FolderController {
     folderServiceImpl.createFolderForUser(folderName, token);
 
     return ResponseEntity.status(HttpStatus.CREATED).body(folderName + " created successfully");
+  }
+
+  @GetMapping("/{folderId}")
+  public ResponseEntity<String> findFolderById(
+      @RequestHeader("Authorization") String token, @PathVariable String folderId) {
+    if (folderId == null || folderId.isEmpty()) {
+      return ResponseEntity.badRequest().body("Folder ID cannot be empty");
+    }
+
+    UUID folderUUID;
+    try {
+      folderUUID = UUID.fromString(folderId);
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.badRequest().body("Invalid UUID format");
+    }
+
+    Optional<Folder> optionalFolder = folderServiceImpl.findFolderByIdAndUserId(folderUUID, token);
+    return optionalFolder
+        .map(folder -> ResponseEntity.ok("Folder found " + folder.getFolderName()))
+        .orElseGet(() -> ResponseEntity.notFound().build());
   }
 }

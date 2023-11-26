@@ -5,6 +5,7 @@ import com.msibai.cloud.Services.JwtService;
 import com.msibai.cloud.entities.Folder;
 import com.msibai.cloud.repositories.FolderRepository;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
@@ -38,9 +39,34 @@ public class FolderServiceImpl implements FolderService {
   }
 
   @Override
-  public Folder findFolderByIdAndUserId(UUID folderId, String token) {
+  public Optional<Folder> findFolderByIdAndUserId(UUID folderId, String token) {
 
-    return null;
+    if (folderId == null || token == null || token.isEmpty()) {
+      throw new IllegalArgumentException("Invalid folder ID or Invalid token");
+    }
+
+    UUID userId;
+    try {
+      userId = UUID.fromString(jwtService.extractUserId(token));
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException("Invalid user ID in the token");
+    }
+
+    Optional<Folder> optionalFolder = folderRepository.findFolderByIdAndUserId(folderId, userId);
+    if (optionalFolder.isPresent()) {
+      Folder folder = optionalFolder.get();
+      UUID folderUserId = folder.getUserId();
+
+      if (!userId.equals(folderUserId)) {
+        // Unauthorized access, return empty optional
+        return Optional.empty();
+      }
+    } else {
+      // Folder not found for the provided folderId and userId
+      return Optional.empty();
+    }
+
+    return optionalFolder;
   }
 
   @Override

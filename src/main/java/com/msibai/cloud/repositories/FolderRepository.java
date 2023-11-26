@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface FolderRepository extends JpaRepository<Folder, UUID> {
   Optional<Folder> findFolderByFolderName(String folderName);
+
+  Optional<Folder> findFolderByIdAndUserId(UUID folderId, UUID userId);
 }

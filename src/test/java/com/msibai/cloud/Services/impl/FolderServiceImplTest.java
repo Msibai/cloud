@@ -1,10 +1,14 @@
 package com.msibai.cloud.Services.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 import com.msibai.cloud.Services.JwtService;
+import com.msibai.cloud.entities.Folder;
 import com.msibai.cloud.repositories.FolderRepository;
+
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -67,5 +71,40 @@ class FolderServiceImplTest {
         () -> folderServiceImpl.createFolderForUser(folderName, token));
     verify(jwtService).extractUserId(token);
     verify(folderRepository, never()).save(any());
+  }
+
+  @Test
+  void testFindFolderByIdAndUserIdAuthorized() {
+    UUID folderId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+    String token = "validToken";
+
+    when(jwtService.extractUserId(token)).thenReturn(userId.toString());
+
+    Folder expectedFolder = new Folder();
+    expectedFolder.setUserId(userId);
+    when(folderRepository.findFolderByIdAndUserId(folderId, userId)).thenReturn(Optional.of(expectedFolder));
+
+    Optional<Folder> result = folderServiceImpl.findFolderByIdAndUserId(folderId, token);
+
+    assertEquals(Optional.of(expectedFolder), result);
+    verify(jwtService).extractUserId(token);
+    verify(folderRepository).findFolderByIdAndUserId(folderId, userId);
+  }
+
+  @Test
+  void testFindFolderByIdAndUserIdFolderNotFoundOrUnauthorized(){
+    UUID folderId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+    String token = "validToken";
+
+    when(jwtService.extractUserId(token)).thenReturn(userId.toString());
+    when(folderRepository.findFolderByIdAndUserId(folderId, userId)).thenReturn(Optional.empty());
+
+    Optional<Folder> result = folderServiceImpl.findFolderByIdAndUserId(folderId, token);
+
+    assertEquals(Optional.empty(), result);
+    verify(jwtService).extractUserId(token);
+    verify(folderRepository).findFolderByIdAndUserId(folderId, userId);
   }
 }
