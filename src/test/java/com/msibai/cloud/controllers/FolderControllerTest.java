@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import com.msibai.cloud.Services.impl.FolderServiceImpl;
 import com.msibai.cloud.entities.Folder;
+import com.msibai.cloud.helpers.TestHelper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -13,13 +14,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @ExtendWith(MockitoExtension.class)
 class FolderControllerTest {
 
-  @Mock FolderServiceImpl folderServiceImp;
+  private final TestHelper testHelper = new TestHelper();
+  @Mock FolderServiceImpl folderServiceImpl;
   @InjectMocks FolderController folderController;
 
   @Test
@@ -30,7 +31,7 @@ class FolderControllerTest {
 
     ResponseEntity<String> response = folderController.createFolder(token, folderName);
 
-    verify(folderServiceImp, times(1)).createFolderForUser(folderName, token);
+    verify(folderServiceImpl, times(1)).createFolderForUser(folderName, token);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
   }
 
@@ -43,7 +44,7 @@ class FolderControllerTest {
     ResponseEntity<String> response = folderController.createFolder(token, folderName);
 
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-    verify(folderServiceImp, never()).createFolderForUser(anyString(), anyString());
+    verify(folderServiceImpl, never()).createFolderForUser(anyString(), anyString());
   }
 
   @Test
@@ -54,7 +55,7 @@ class FolderControllerTest {
     Folder mockFolder = new Folder();
     mockFolder.setFolderName("TestFolder");
 
-    when(folderServiceImp.findFolderByIdAndUserId(eq(folderId), eq(token)))
+    when(folderServiceImpl.findFolderByIdAndUserId(eq(folderId), eq(token)))
         .thenReturn(Optional.of(mockFolder));
 
     ResponseEntity<String> response = folderController.findFolderById(token, folderId.toString());
@@ -93,11 +94,41 @@ class FolderControllerTest {
     UUID folderId = UUID.randomUUID();
     String token = "validToken";
 
-    when(folderServiceImp.findFolderByIdAndUserId(eq(folderId), eq(token)))
+    when(folderServiceImpl.findFolderByIdAndUserId(eq(folderId), eq(token)))
         .thenReturn(Optional.empty());
 
     ResponseEntity<String> response = folderController.findFolderById(token, folderId.toString());
 
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+  }
+
+  @Test
+  public void testGetAllFoldersForUserSuccess() {
+    String validToken = "validToken";
+    UUID userId = UUID.randomUUID();
+    List<Folder> mockFolders =
+        testHelper.createListOfFoldersWithUserId(
+            Arrays.asList("Folder 1", "Folder 2"), userId);
+
+    when(folderServiceImpl.findAllFoldersByUserId(validToken)).thenReturn(mockFolders);
+
+    ResponseEntity<List<Folder>> response = folderController.findAllByUserId(validToken);
+
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(
+        2,
+        Objects.requireNonNull(response.getBody())
+            .size());
+    verify(folderServiceImpl).findAllFoldersByUserId(validToken);
+  }
+
+  @Test
+  public void testGetAllFoldersForUserUnauthorized() {
+    String invalidToken = "";
+
+    ResponseEntity<List<Folder>> response = folderController.findAllByUserId(invalidToken);
+
+    assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+    verifyNoInteractions(folderServiceImpl);
   }
 }

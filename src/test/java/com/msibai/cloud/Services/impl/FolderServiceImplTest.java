@@ -1,15 +1,13 @@
 package com.msibai.cloud.Services.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.msibai.cloud.Services.JwtService;
 import com.msibai.cloud.entities.Folder;
+import com.msibai.cloud.helpers.TestHelper;
 import com.msibai.cloud.repositories.FolderRepository;
-
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,6 +19,8 @@ class FolderServiceImplTest {
   @Mock FolderRepository folderRepository;
   @Mock JwtService jwtService;
   @InjectMocks FolderServiceImpl folderServiceImpl;
+
+  private final TestHelper testHelper = new TestHelper();
 
   @Test
   void testCreateFolderForUserWithValidInputs() {
@@ -83,7 +83,8 @@ class FolderServiceImplTest {
 
     Folder expectedFolder = new Folder();
     expectedFolder.setUserId(userId);
-    when(folderRepository.findFolderByIdAndUserId(folderId, userId)).thenReturn(Optional.of(expectedFolder));
+    when(folderRepository.findFolderByIdAndUserId(folderId, userId))
+        .thenReturn(Optional.of(expectedFolder));
 
     Optional<Folder> result = folderServiceImpl.findFolderByIdAndUserId(folderId, token);
 
@@ -93,7 +94,7 @@ class FolderServiceImplTest {
   }
 
   @Test
-  void testFindFolderByIdAndUserIdFolderNotFoundOrUnauthorized(){
+  void testFindFolderByIdAndUserIdFolderNotFoundOrUnauthorized() {
     UUID folderId = UUID.randomUUID();
     UUID userId = UUID.randomUUID();
     String token = "validToken";
@@ -106,5 +107,41 @@ class FolderServiceImplTest {
     assertEquals(Optional.empty(), result);
     verify(jwtService).extractUserId(token);
     verify(folderRepository).findFolderByIdAndUserId(folderId, userId);
+  }
+
+  @Test
+  public void testFindAllFoldersByUserIdSuccess() {
+    String validToken = "validToken";
+    UUID userId = UUID.randomUUID();
+    List<Folder> mockFolders =
+        testHelper.createListOfFoldersWithUserId(Arrays.asList("Folder 1", "Folder 2"), userId);
+
+    when(jwtService.extractUserId(validToken)).thenReturn(userId.toString());
+    when(folderRepository.findAllByUserId(userId)).thenReturn(mockFolders);
+
+    List<Folder> result = folderServiceImpl.findAllFoldersByUserId(validToken);
+
+    assertEquals(mockFolders, result);
+    verify(jwtService).extractUserId(validToken);
+    verify(folderRepository).findAllByUserId(userId);
+  }
+
+  @Test
+  public void testFindAllFoldersByUserIdWithInvalidToken() {
+    String invalidToken = "invalidToken";
+
+    when(jwtService.extractUserId(invalidToken))
+        .thenThrow(new IllegalArgumentException("Invalid token"));
+
+    try {
+      folderServiceImpl.findAllFoldersByUserId(invalidToken);
+    } catch (IllegalArgumentException e) {
+      assertEquals("Invalid user ID in the token", e.getMessage());
+      verify(jwtService).extractUserId(invalidToken);
+      verifyNoInteractions(folderRepository);
+      return;
+    }
+
+    fail("Expected an IllegalArgumentException to be thrown");
   }
 }

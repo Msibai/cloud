@@ -2,6 +2,7 @@ package com.msibai.cloud.controllers;
 
 import com.msibai.cloud.Services.impl.FolderServiceImpl;
 import com.msibai.cloud.entities.Folder;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -47,5 +48,22 @@ public class FolderController {
     return optionalFolder
         .map(folder -> ResponseEntity.ok("Folder found " + folder.getFolderName()))
         .orElseGet(() -> ResponseEntity.notFound().build());
+  }
+
+  @GetMapping("/all")
+  public ResponseEntity<List<Folder>> findAllByUserId(
+      @RequestHeader("Authorization") String token) {
+
+    if (token.isEmpty()) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+
+    List<Folder> folders = folderServiceImpl.findAllFoldersByUserId(token);
+
+    if (folders.isEmpty()) {
+      return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    return ResponseEntity.ok(folders);
   }
 }

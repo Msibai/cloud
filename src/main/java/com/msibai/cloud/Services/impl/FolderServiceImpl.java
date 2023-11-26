@@ -72,7 +72,18 @@ public class FolderServiceImpl implements FolderService {
   @Override
   public List<Folder> findAllFoldersByUserId(String token) {
 
-    return null;
+    if (token == null || token.isEmpty()) {
+      throw new IllegalArgumentException("Invalid token");
+    }
+
+    UUID userId;
+    try {
+      userId = UUID.fromString(jwtService.extractUserId(token));
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException("Invalid user ID in the token");
+    }
+
+    return folderRepository.findAllByUserId(userId);
   }
 
   @Override
