@@ -3,6 +3,8 @@ package com.msibai.cloud.Services.impl;
 import com.msibai.cloud.Services.FolderService;
 import com.msibai.cloud.Services.JwtService;
 import com.msibai.cloud.entities.Folder;
+import com.msibai.cloud.exceptions.NotFoundException;
+import com.msibai.cloud.exceptions.UnauthorizedException;
 import com.msibai.cloud.repositories.FolderRepository;
 import java.util.List;
 import java.util.Optional;
@@ -87,7 +89,25 @@ public class FolderServiceImpl implements FolderService {
   }
 
   @Override
-  public void updateFolderByIdAndUserId(UUID folderId, String token) {}
+  public boolean updateFolderByIdAndUserId(UUID folderId, String token, String updatedFolderName) {
+
+    UUID userId = UUID.fromString(jwtService.extractUserId(token));
+
+    Folder existingFolder =
+        folderRepository
+            .findFolderByIdAndUserId(folderId, userId)
+            .orElseThrow(() -> new NotFoundException("Folder not found"));
+
+    if (!existingFolder.getUserId().equals(userId)) {
+
+      throw new UnauthorizedException("Unauthorized access to update folder");
+    }
+
+    existingFolder.setFolderName(updatedFolderName);
+    folderRepository.save(existingFolder);
+
+    return true;
+  }
 
   @Override
   public void deleteFolderByIdAndUserId(UUID folderId, String token) {}

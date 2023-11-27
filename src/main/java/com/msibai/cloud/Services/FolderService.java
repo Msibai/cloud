@@ -14,7 +14,7 @@ public interface FolderService {
 
   List<Folder> findAllFoldersByUserId(String token);
 
-  void updateFolderByIdAndUserId(UUID folderId, String token);
+  boolean updateFolderByIdAndUserId(UUID folderId, String token, String updatedFolderName);
 
   void deleteFolderByIdAndUserId(UUID folderId, String token);
 }

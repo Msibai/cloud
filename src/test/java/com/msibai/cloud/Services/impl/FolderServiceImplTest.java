@@ -5,6 +5,8 @@ import static org.mockito.Mockito.*;
 
 import com.msibai.cloud.Services.JwtService;
 import com.msibai.cloud.entities.Folder;
+import com.msibai.cloud.exceptions.NotFoundException;
+import com.msibai.cloud.exceptions.UnauthorizedException;
 import com.msibai.cloud.helpers.TestHelper;
 import com.msibai.cloud.repositories.FolderRepository;
 import java.util.*;
@@ -16,11 +18,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class FolderServiceImplTest {
+  private final TestHelper testHelper = new TestHelper();
   @Mock FolderRepository folderRepository;
   @Mock JwtService jwtService;
   @InjectMocks FolderServiceImpl folderServiceImpl;
-
-  private final TestHelper testHelper = new TestHelper();
 
   @Test
   void testCreateFolderForUserWithValidInputs() {
@@ -143,5 +144,67 @@ class FolderServiceImplTest {
     }
 
     fail("Expected an IllegalArgumentException to be thrown");
+  }
+
+  @Test
+  void testUpdateFolderByIdAndUserIdSuccess() {
+
+    UUID folderId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+    String token = "validToken";
+    String updatedFolderName = "Updated Folder Name";
+
+    when(jwtService.extractUserId(token)).thenReturn(userId.toString());
+
+    Folder existingFolder = new Folder();
+    existingFolder.setId(folderId);
+    existingFolder.setUserId(userId);
+    when(folderRepository.findFolderByIdAndUserId(eq(folderId), eq(userId)))
+        .thenReturn(Optional.of(existingFolder));
+
+    boolean updated =
+        folderServiceImpl.updateFolderByIdAndUserId(folderId, token, updatedFolderName);
+
+    assertTrue(updated);
+    verify(folderRepository, times(1)).save(existingFolder);
+  }
+
+  @Test
+  void testUpdateFolderByIdAndUserIdFolderNotFound() {
+
+    UUID folderId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+    String token = "validToken";
+    String updatedFolderName = "Updated Folder Name";
+
+    when(jwtService.extractUserId(token)).thenReturn(userId.toString());
+
+    when(folderRepository.findFolderByIdAndUserId(any(UUID.class), any(UUID.class)))
+            .thenReturn(Optional.empty());
+
+    assertThrows(NotFoundException.class,
+            () -> folderServiceImpl.updateFolderByIdAndUserId(folderId, token, updatedFolderName));
+  }
+
+  @Test
+  void testUpdateFolderByIdAndUserId_Failure_UnauthorizedAccess() {
+
+    UUID folderId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+    UUID anotherUserId = UUID.randomUUID();
+    String token = "validToken";
+    String updatedFolderName = "Updated Folder Name";
+
+    when(jwtService.extractUserId(token)).thenReturn(userId.toString());
+
+    Folder existingFolder = new Folder();
+    existingFolder.setId(folderId);
+    existingFolder.setUserId(anotherUserId);
+
+    when(folderRepository.findFolderByIdAndUserId(eq(folderId), eq(userId)))
+            .thenReturn(Optional.of(existingFolder));
+
+    assertThrows(UnauthorizedException.class,
+            () -> folderServiceImpl.updateFolderByIdAndUserId(folderId, token, updatedFolderName));
   }
 }

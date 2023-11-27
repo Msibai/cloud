@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 import com.msibai.cloud.Services.impl.FolderServiceImpl;
 import com.msibai.cloud.entities.Folder;
 import com.msibai.cloud.helpers.TestHelper;
+import java.util.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -13,8 +14,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
-import java.util.*;
 
 @ExtendWith(MockitoExtension.class)
 class FolderControllerTest {
@@ -107,18 +106,14 @@ class FolderControllerTest {
     String validToken = "validToken";
     UUID userId = UUID.randomUUID();
     List<Folder> mockFolders =
-        testHelper.createListOfFoldersWithUserId(
-            Arrays.asList("Folder 1", "Folder 2"), userId);
+        testHelper.createListOfFoldersWithUserId(Arrays.asList("Folder 1", "Folder 2"), userId);
 
     when(folderServiceImpl.findAllFoldersByUserId(validToken)).thenReturn(mockFolders);
 
     ResponseEntity<List<Folder>> response = folderController.findAllByUserId(validToken);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertEquals(
-        2,
-        Objects.requireNonNull(response.getBody())
-            .size());
+    assertEquals(2, Objects.requireNonNull(response.getBody()).size());
     verify(folderServiceImpl).findAllFoldersByUserId(validToken);
   }
 
@@ -130,5 +125,39 @@ class FolderControllerTest {
 
     assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
     verifyNoInteractions(folderServiceImpl);
+  }
+
+  @Test
+  void testUpdateFolderNameSuccessfully() {
+    String token = "validToken";
+    String folderId = UUID.randomUUID().toString();
+    String updatedFolderName = "Updated Folder Name";
+
+    when(folderServiceImpl.updateFolderByIdAndUserId(
+            any(UUID.class), eq(token), eq(updatedFolderName)))
+        .thenReturn(true);
+
+    ResponseEntity<String> response =
+        folderController.updateFolderName(token, folderId, updatedFolderName);
+
+    assertEquals("200 OK", response.getStatusCode().toString());
+    assertEquals("Folder name updated successfully", response.getBody());
+  }
+
+  @Test
+  void testUpdateFolderNameFailure() {
+    String token = "validToken";
+    String folderId = UUID.randomUUID().toString();
+    String updatedFolderName = "Updated Folder Name";
+
+    when(folderServiceImpl.updateFolderByIdAndUserId(
+            any(UUID.class), eq(token), eq(updatedFolderName)))
+        .thenReturn(false);
+
+    ResponseEntity<String> response =
+        folderController.updateFolderName(token, folderId, updatedFolderName);
+
+    assertEquals("500 INTERNAL_SERVER_ERROR", response.getStatusCode().toString());
+    assertEquals("Failed to update folder name", response.getBody());
   }
 }

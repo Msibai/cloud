@@ -66,4 +66,33 @@ public class FolderController {
 
     return ResponseEntity.ok(folders);
   }
+
+  @PostMapping("/{folderId}/update")
+  public ResponseEntity<String> updateFolderName(
+      @RequestHeader("Authorization") String token,
+      @PathVariable String folderId,
+      @RequestParam("updatedFolderName") String updatedFolderName) {
+
+    UUID parsedFolderId;
+
+    try {
+      parsedFolderId = UUID.fromString(folderId);
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.badRequest().body("Invalid folder ID format");
+    }
+
+    if (updatedFolderName == null || updatedFolderName.isEmpty()) {
+      return ResponseEntity.badRequest().body("Updated folder name cannot be empty");
+    }
+
+    boolean updated =
+        folderServiceImpl.updateFolderByIdAndUserId(parsedFolderId, token, updatedFolderName);
+
+    if (updated) {
+      return ResponseEntity.ok("Folder name updated successfully");
+    } else {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body("Failed to update folder name");
+    }
+  }
 }

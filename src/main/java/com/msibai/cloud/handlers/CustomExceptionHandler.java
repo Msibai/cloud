@@ -1,5 +1,7 @@
 package com.msibai.cloud.handlers;
 
+import com.msibai.cloud.exceptions.NotFoundException;
+import com.msibai.cloud.exceptions.UnauthorizedException;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
@@ -65,5 +67,15 @@ public class CustomExceptionHandler {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
           .body("Access Denied: " + ex.getCause().getMessage());
     }
+  }
+
+  @ExceptionHandler(NotFoundException.class)
+  public ResponseEntity<String> handleNotFoundException(NotFoundException ex) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+  }
+
+  @ExceptionHandler(UnauthorizedException.class)
+  public ResponseEntity<String> handleUnauthorizedException(UnauthorizedException ex) {
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
   }
 }

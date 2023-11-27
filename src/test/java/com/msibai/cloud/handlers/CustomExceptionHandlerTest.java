@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.msibai.cloud.exceptions.NotFoundException;
+import com.msibai.cloud.exceptions.UnauthorizedException;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
@@ -97,5 +99,27 @@ class CustomExceptionHandlerTest {
 
     assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
     assertEquals("Access Denied: Malformed JWT", response.getBody());
+  }
+
+  @Test
+  void testHandleNotFoundException() {
+    NotFoundException exception = mock(NotFoundException.class);
+    when(exception.getMessage()).thenReturn("Not Found");
+
+    ResponseEntity<String> response = customExceptionHandler.handleNotFoundException(exception);
+
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    assertEquals("Not Found", response.getBody());
+  }
+
+  @Test
+  void testHandleUnauthorizedException() {
+    UnauthorizedException exception = mock(UnauthorizedException.class);
+    when(exception.getMessage()).thenReturn("Unauthorized access");
+
+    ResponseEntity<String> response = customExceptionHandler.handleUnauthorizedException(exception);
+
+    assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+    assertEquals("Unauthorized access", response.getBody());
   }
 }
