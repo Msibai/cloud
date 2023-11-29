@@ -61,4 +61,15 @@ public class FileController {
 
     return new ResponseEntity<>(fileData, headers, HttpStatus.OK);
   }
+
+  @DeleteMapping("/folders/{folderId}/files/{fileId}/delete")
+  public ResponseEntity<String> deleteFileFromFolder(
+          @RequestHeader("Authorization") String token,
+          @PathVariable UUID folderId,
+          @PathVariable UUID fileId) {
+
+    fileServiceImpl.deleteFileFromFolder(token, folderId, fileId);
+
+    return ResponseEntity.ok("File deleted successfully");
+  }
 }

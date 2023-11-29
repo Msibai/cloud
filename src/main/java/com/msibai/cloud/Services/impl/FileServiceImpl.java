@@ -75,7 +75,22 @@ public class FileServiceImpl implements FileService {
   }
 
   @Override
-  public void deleteFileFromFolder(String token, UUID folderId, UUID fileId) {}
+  public void deleteFileFromFolder(String token, UUID folderId, UUID fileId) {
+    tokenIsNotNullOrEmpty(token);
+    UUID userId = getUserIdFromToken(token, jwtService);
+    File file =
+            fileRepository
+                    .findByIdAndFolderId(fileId, folderId)
+                    .orElseThrow(() -> new NotFoundException("File not found in the folder"));
+
+    if (!file.getUserId().equals(userId)) {
+
+      throw new UnauthorizedException("Unauthorized access, failed to download file!");
+    }
+
+    fileRepository.delete(file);
+
+  }
 
   @Override
   public void moveFileToAnotherFolder(String token, UUID folderId, UUID fileId) {}

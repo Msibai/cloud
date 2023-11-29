@@ -23,7 +23,7 @@ import org.springframework.mock.web.MockMultipartFile;
 class FileControllerTest {
 
   private final String token = "validToken";
-  @Mock private FileServiceImpl fileServiceImp;
+  @Mock private FileServiceImpl fileServiceImpl;
   @InjectMocks private FileController fileController;
 
   @Test
@@ -33,12 +33,12 @@ class FileControllerTest {
     MockMultipartFile multipartFile =
         new MockMultipartFile("file", "test.txt", "text/plain", fileContent);
 
-    doNothing().when(fileServiceImp).uploadFileToFolder(anyString(), any(UUID.class), any());
+    doNothing().when(fileServiceImpl).uploadFileToFolder(anyString(), any(UUID.class), any());
 
     ResponseEntity<String> response =
         fileController.uploadFileToFolder(token, UUID.randomUUID(), multipartFile);
 
-    verify(fileServiceImp, times(1))
+    verify(fileServiceImpl, times(1))
         .uploadFileToFolder(eq(token), any(UUID.class), any(FileDto.class));
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
@@ -49,7 +49,7 @@ class FileControllerTest {
     ResponseEntity<String> response =
         fileController.uploadFileToFolder(token, UUID.randomUUID(), null);
 
-    verifyNoInteractions(fileServiceImp);
+    verifyNoInteractions(fileServiceImpl);
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
   }
 
@@ -62,13 +62,13 @@ class FileControllerTest {
     fileDto.setName("test.txt");
     fileDto.setContentType("text/plain");
 
-    when(fileServiceImp.downloadFileFromFolder(anyString(), any(UUID.class), any(UUID.class)))
+    when(fileServiceImpl.downloadFileFromFolder(anyString(), any(UUID.class), any(UUID.class)))
         .thenReturn(fileDto);
 
     ResponseEntity<byte[]> response =
         fileController.downloadFileFromFolder(token, UUID.randomUUID(), UUID.randomUUID());
 
-    verify(fileServiceImp, times(1))
+    verify(fileServiceImpl, times(1))
         .downloadFileFromFolder(eq(token), any(UUID.class), any(UUID.class));
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertNotNull(response.getBody());
@@ -80,7 +80,7 @@ class FileControllerTest {
   @Test
   void testDownloadFileFromFolderNotFound() {
 
-    when(fileServiceImp.downloadFileFromFolder(anyString(), any(UUID.class), any(UUID.class)))
+    when(fileServiceImpl.downloadFileFromFolder(anyString(), any(UUID.class), any(UUID.class)))
         .thenThrow(new NotFoundException("File not found"));
 
     try {
@@ -95,7 +95,7 @@ class FileControllerTest {
   @Test
   void testDownloadFileFromFolderNotAuthorized() {
 
-    when(fileServiceImp.downloadFileFromFolder(anyString(), any(UUID.class), any(UUID.class)))
+    when(fileServiceImpl.downloadFileFromFolder(anyString(), any(UUID.class), any(UUID.class)))
         .thenThrow(new UnauthorizedException("Unauthorized access"));
 
     try {
@@ -105,5 +105,17 @@ class FileControllerTest {
     } catch (UnauthorizedException ex) {
       assertEquals("Unauthorized access", ex.getMessage());
     }
+  }
+
+  @Test
+  void testDeleteFileFromFolder() {
+    UUID folderId = UUID.randomUUID();
+    UUID fileId = UUID.randomUUID();
+    doNothing().when(fileServiceImpl).deleteFileFromFolder(token, folderId, fileId);
+
+    ResponseEntity<String> response = fileController.deleteFileFromFolder(token, folderId, fileId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals("File deleted successfully", response.getBody());
+    verify(fileServiceImpl, times(1)).deleteFileFromFolder(token, folderId, fileId);
   }
 }

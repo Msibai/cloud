@@ -1,5 +1,6 @@
 package com.msibai.cloud.Services.impl;
 
+import static com.msibai.cloud.utilities.Utility.getUserIdFromToken;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -28,15 +29,15 @@ class FileServiceImplTest {
   private final UUID userId = UUID.randomUUID();
   private final String token = "validToken";
   private final File file =
-          File.builder()
-                  .id(fileId)
-                  .name("testFile.txt")
-                  .folderId(folderId)
-                  .userId(userId)
-                  .contentType("text/plain")
-                  .content(new byte[] {})
-                  .size(100L)
-                  .build();
+      File.builder()
+          .id(fileId)
+          .name("testFile.txt")
+          .folderId(folderId)
+          .userId(userId)
+          .contentType("text/plain")
+          .content(new byte[] {})
+          .size(100L)
+          .build();
 
   @Mock JwtService jwtService;
   @Mock FolderServiceImpl folderServiceImpl;
@@ -131,7 +132,41 @@ class FileServiceImplTest {
   }
 
   @Test
-  void deleteFileFromFolder() {}
+  void deleteFileFromFolderSuccessfully() {
+
+    when(jwtService.extractUserId(token)).thenReturn(String.valueOf(userId));
+    when(fileRepository.findByIdAndFolderId(fileId, folderId)).thenReturn(Optional.of(file));
+
+    assertDoesNotThrow(() -> fileServiceImpl.deleteFileFromFolder(token, folderId, fileId));
+    verify(fileRepository, times(1)).delete(file);
+  }
+
+  @Test
+  void deleteFileFromFolderUnauthorized() {
+
+    file.setUserId(UUID.randomUUID());
+
+    when(jwtService.extractUserId(token)).thenReturn(String.valueOf(userId));
+    when(fileRepository.findByIdAndFolderId(fileId, folderId)).thenReturn(Optional.of(file));
+
+    assertThrows(
+            UnauthorizedException.class,
+            () -> fileServiceImpl.deleteFileFromFolder(token, folderId, fileId));
+    verify(fileRepository, never()).delete(file);
+  }
+
+  @Test
+  void deleteFileFromFolderFileNotFound() {
+
+    when(jwtService.extractUserId(token)).thenReturn(String.valueOf(userId));
+    when(fileRepository.findByIdAndFolderId(fileId, folderId)).thenReturn(Optional.empty());
+
+    assertThrows(
+            NotFoundException.class,
+            () -> fileServiceImpl.deleteFileFromFolder(token, folderId, fileId));
+    verify(fileRepository, never()).delete(file);
+
+  }
 
   @Test
   void moveFileToAnotherFolder() {}
