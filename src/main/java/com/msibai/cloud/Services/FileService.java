@@ -7,7 +7,7 @@ import java.util.UUID;
 public interface FileService {
   void uploadFileToFolder(String token, UUID folderId, FileDto file);
 
-  File downloadFileFromFolder(String token, UUID folderId, UUID fileId);
+  FileDto downloadFileFromFolder(String token, UUID folderId, UUID fileId);
 
   void deleteFileFromFolder(String token, UUID folderId, UUID fileId);
 

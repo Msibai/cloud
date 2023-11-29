@@ -1,10 +1,14 @@
 package com.msibai.cloud.Services.impl;
 
+import static com.msibai.cloud.utilities.Utility.getUserIdFromToken;
+import static com.msibai.cloud.utilities.Utility.tokenIsNotNullOrEmpty;
+
 import com.msibai.cloud.Services.FileService;
 import com.msibai.cloud.Services.JwtService;
 import com.msibai.cloud.dtos.FileDto;
 import com.msibai.cloud.entities.File;
 import com.msibai.cloud.exceptions.NotFoundException;
+import com.msibai.cloud.exceptions.UnauthorizedException;
 import com.msibai.cloud.repositories.FileRepository;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -25,12 +29,8 @@ public class FileServiceImpl implements FileService {
     if (isNameExists(file.getName())) {
       throw new DuplicateKeyException(file.getName() + " is already exists");
     }
-    UUID userId;
-    try {
-      userId = UUID.fromString(jwtService.extractUserId(token));
-    } catch (IllegalArgumentException e) {
-      throw new IllegalArgumentException("Invalid user ID in the token");
-    }
+    tokenIsNotNullOrEmpty(token);
+    UUID userId = getUserIdFromToken(token, jwtService);
 
     folderServiceImpl
         .findFolderByIdAndUserId(folderId, token)
@@ -52,9 +52,26 @@ public class FileServiceImpl implements FileService {
   }
 
   @Override
-  public File downloadFileFromFolder(String token, UUID folderId, UUID fileId) {
+  public FileDto downloadFileFromFolder(String token, UUID folderId, UUID fileId) {
 
-    return null;
+    tokenIsNotNullOrEmpty(token);
+    UUID userId = getUserIdFromToken(token, jwtService);
+    File file =
+        fileRepository
+            .findByIdAndFolderId(fileId, folderId)
+            .orElseThrow(() -> new NotFoundException("File not found in the folder"));
+
+    if (!file.getUserId().equals(userId)) {
+
+      throw new UnauthorizedException("Unauthorized access, failed to download file!");
+    }
+
+    return FileDto.builder()
+        .name(file.getName())
+        .contentType(file.getContentType())
+        .content(file.getContent())
+        .size(file.getSize())
+        .build();
   }
 
   @Override

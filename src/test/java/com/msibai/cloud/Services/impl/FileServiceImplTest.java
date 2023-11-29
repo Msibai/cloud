@@ -8,6 +8,8 @@ import com.msibai.cloud.Services.JwtService;
 import com.msibai.cloud.dtos.FileDto;
 import com.msibai.cloud.entities.File;
 import com.msibai.cloud.entities.Folder;
+import com.msibai.cloud.exceptions.NotFoundException;
+import com.msibai.cloud.exceptions.UnauthorizedException;
 import com.msibai.cloud.repositories.FileRepository;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,18 +23,28 @@ import org.springframework.dao.DuplicateKeyException;
 @ExtendWith(MockitoExtension.class)
 class FileServiceImplTest {
 
+  private final UUID fileId = UUID.randomUUID();
+  private final UUID folderId = UUID.randomUUID();
+  private final UUID userId = UUID.randomUUID();
+  private final String token = "validToken";
+  private final File file =
+          File.builder()
+                  .id(fileId)
+                  .name("testFile.txt")
+                  .folderId(folderId)
+                  .userId(userId)
+                  .contentType("text/plain")
+                  .content(new byte[] {})
+                  .size(100L)
+                  .build();
+
   @Mock JwtService jwtService;
   @Mock FolderServiceImpl folderServiceImpl;
   @Mock FileRepository fileRepository;
-
   @InjectMocks FileServiceImpl fileServiceImpl;
 
   @Test
   void uploadFileToFolderSuccessfully() {
-
-    String token = "validToken";
-    UUID userId = UUID.randomUUID();
-    UUID folderId = UUID.randomUUID();
 
     FileDto file =
         FileDto.builder()
@@ -56,10 +68,6 @@ class FileServiceImplTest {
   @Test
   void uploadFileToFolderFailure() {
 
-    String token = "validToken";
-    UUID userId = UUID.randomUUID();
-    UUID folderId = UUID.randomUUID();
-
     FileDto file =
         FileDto.builder()
             .name("Test.txt")
@@ -79,7 +87,48 @@ class FileServiceImplTest {
   }
 
   @Test
-  void downloadFileFromFolder() {}
+  void downloadFileFromFolderSuccessfully() {
+
+    when(jwtService.extractUserId(token)).thenReturn(String.valueOf(userId));
+
+    FileDto expectedFile =
+        FileDto.builder()
+            .name(file.getName())
+            .content(file.getContent())
+            .contentType(file.getContentType())
+            .size(file.getSize())
+            .build();
+
+    when(fileRepository.findByIdAndFolderId(fileId, folderId)).thenReturn(Optional.of(file));
+
+    FileDto downloadedFileDto = fileServiceImpl.downloadFileFromFolder(token, folderId, fileId);
+
+    assertEquals(expectedFile.getName(), downloadedFileDto.getName());
+  }
+
+  @Test
+  void downloadFileFromFolderFileNotFound() {
+
+    when(jwtService.extractUserId(token)).thenReturn(String.valueOf(userId));
+    when(fileRepository.findByIdAndFolderId(fileId, folderId)).thenReturn(Optional.empty());
+
+    assertThrows(
+        NotFoundException.class,
+        () -> fileServiceImpl.downloadFileFromFolder(token, folderId, fileId));
+  }
+
+  @Test
+  void downloadFileFromFolderUnauthorized() {
+
+    file.setUserId(UUID.randomUUID());
+
+    when(jwtService.extractUserId(token)).thenReturn(String.valueOf(userId));
+    when(fileRepository.findByIdAndFolderId(fileId, folderId)).thenReturn(Optional.of(file));
+
+    assertThrows(
+        UnauthorizedException.class,
+        () -> fileServiceImpl.downloadFileFromFolder(token, folderId, fileId));
+  }
 
   @Test
   void deleteFileFromFolder() {}

@@ -23,7 +23,7 @@ public class FileController {
       @RequestParam("file") MultipartFile file)
       throws IOException {
 
-    if (file.isEmpty()) {
+    if (file == null) {
       return ResponseEntity.badRequest().body("File is missing");
     }
 
@@ -42,5 +42,23 @@ public class FileController {
     fileServiceImpl.uploadFileToFolder(token, folderId, uploadedFile);
 
     return ResponseEntity.ok(file.getOriginalFilename() + " uploaded successfully!");
+  }
+
+  @GetMapping("/folders/{folderId}/files/{fileId}/download")
+  public ResponseEntity<byte[]> downloadFileFromFolder(
+      @RequestHeader("Authorization") String token,
+      @PathVariable UUID folderId,
+      @PathVariable UUID fileId) {
+
+    FileDto file = fileServiceImpl.downloadFileFromFolder(token, folderId, fileId);
+    byte[] fileData = file.getContent();
+    String fileName = file.getName();
+    String contentType = file.getContentType();
+
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentDisposition(ContentDisposition.attachment().filename(fileName).build());
+    headers.setContentType(MediaType.parseMediaType(contentType));
+
+    return new ResponseEntity<>(fileData, headers, HttpStatus.OK);
   }
 }
