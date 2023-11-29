@@ -1,6 +1,5 @@
 package com.msibai.cloud.Services.impl;
 
-import static com.msibai.cloud.utilities.Utility.getUserIdFromToken;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -150,8 +149,8 @@ class FileServiceImplTest {
     when(fileRepository.findByIdAndFolderId(fileId, folderId)).thenReturn(Optional.of(file));
 
     assertThrows(
-            UnauthorizedException.class,
-            () -> fileServiceImpl.deleteFileFromFolder(token, folderId, fileId));
+        UnauthorizedException.class,
+        () -> fileServiceImpl.deleteFileFromFolder(token, folderId, fileId));
     verify(fileRepository, never()).delete(file);
   }
 
@@ -162,12 +161,30 @@ class FileServiceImplTest {
     when(fileRepository.findByIdAndFolderId(fileId, folderId)).thenReturn(Optional.empty());
 
     assertThrows(
-            NotFoundException.class,
-            () -> fileServiceImpl.deleteFileFromFolder(token, folderId, fileId));
+        NotFoundException.class,
+        () -> fileServiceImpl.deleteFileFromFolder(token, folderId, fileId));
     verify(fileRepository, never()).delete(file);
-
   }
 
   @Test
-  void moveFileToAnotherFolder() {}
+  void moveFileToAnotherFolder() {
+
+    UUID currentFolderId = UUID.randomUUID();
+    UUID fileId = UUID.randomUUID();
+    UUID targetFolderId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+
+    when(jwtService.extractUserId(token)).thenReturn(String.valueOf(userId));
+
+    File fileToMove = new File();
+    fileToMove.setUserId(userId);
+    when(fileRepository.findByIdAndFolderId(fileId, currentFolderId))
+        .thenReturn(Optional.of(fileToMove));
+
+    assertDoesNotThrow(
+        () ->
+            fileServiceImpl.moveFileToAnotherFolder(
+                token, currentFolderId, fileId, targetFolderId));
+    verify(fileRepository, times(1)).save(fileToMove);
+  }
 }

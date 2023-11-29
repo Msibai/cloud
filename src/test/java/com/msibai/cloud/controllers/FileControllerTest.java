@@ -118,4 +118,24 @@ class FileControllerTest {
     assertEquals("File deleted successfully", response.getBody());
     verify(fileServiceImpl, times(1)).deleteFileFromFolder(token, folderId, fileId);
   }
+
+  @Test
+  void testMoveFileToAnotherFolder() {
+
+    UUID currentFolderId = UUID.randomUUID();
+    UUID fileId = UUID.randomUUID();
+    UUID targetFolderId = UUID.randomUUID();
+    doNothing()
+        .when(fileServiceImpl)
+        .moveFileToAnotherFolder(token, currentFolderId, fileId, targetFolderId);
+
+    ResponseEntity<String> response =
+        fileController.moveFileToAnotherFolder(token, currentFolderId, fileId, targetFolderId);
+
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals("File moved successfully to the target folder.", response.getBody());
+
+    verify(fileServiceImpl, times(1))
+        .moveFileToAnotherFolder(token, currentFolderId, fileId, targetFolderId);
+  }
 }

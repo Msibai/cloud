@@ -2,6 +2,7 @@ package com.msibai.cloud.controllers;
 
 import com.msibai.cloud.Services.impl.FileServiceImpl;
 import com.msibai.cloud.dtos.FileDto;
+import com.msibai.cloud.exceptions.NotFoundException;
 import java.io.IOException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -64,12 +65,30 @@ public class FileController {
 
   @DeleteMapping("/folders/{folderId}/files/{fileId}/delete")
   public ResponseEntity<String> deleteFileFromFolder(
-          @RequestHeader("Authorization") String token,
-          @PathVariable UUID folderId,
-          @PathVariable UUID fileId) {
+      @RequestHeader("Authorization") String token,
+      @PathVariable UUID folderId,
+      @PathVariable UUID fileId) {
 
     fileServiceImpl.deleteFileFromFolder(token, folderId, fileId);
 
     return ResponseEntity.ok("File deleted successfully");
+  }
+
+  @PutMapping("/folders/{currentFolderId}/files/{fileId}/move")
+  public ResponseEntity<String> moveFileToAnotherFolder(
+      @RequestHeader("Authorization") String token,
+      @PathVariable UUID currentFolderId,
+      @PathVariable UUID fileId,
+      @RequestParam UUID targetFolderId) {
+
+    try {
+      fileServiceImpl.moveFileToAnotherFolder(token, currentFolderId, fileId, targetFolderId);
+      return ResponseEntity.ok("File moved successfully to the target folder.");
+    } catch (NotFoundException e) {
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body("An error occurred while moving the file.");
+    }
   }
 }

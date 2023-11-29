@@ -1,14 +1,12 @@
 package com.msibai.cloud.Services.impl;
 
-import static com.msibai.cloud.utilities.Utility.getUserIdFromToken;
-import static com.msibai.cloud.utilities.Utility.tokenIsNotNullOrEmpty;
+import static com.msibai.cloud.utilities.Utility.*;
 
 import com.msibai.cloud.Services.FileService;
 import com.msibai.cloud.Services.JwtService;
 import com.msibai.cloud.dtos.FileDto;
 import com.msibai.cloud.entities.File;
 import com.msibai.cloud.exceptions.NotFoundException;
-import com.msibai.cloud.exceptions.UnauthorizedException;
 import com.msibai.cloud.repositories.FileRepository;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -61,10 +59,7 @@ public class FileServiceImpl implements FileService {
             .findByIdAndFolderId(fileId, folderId)
             .orElseThrow(() -> new NotFoundException("File not found in the folder"));
 
-    if (!file.getUserId().equals(userId)) {
-
-      throw new UnauthorizedException("Unauthorized access, failed to download file!");
-    }
+    authorizeUser(file, userId, File::getUserId);
 
     return FileDto.builder()
         .name(file.getName())
@@ -79,21 +74,31 @@ public class FileServiceImpl implements FileService {
     tokenIsNotNullOrEmpty(token);
     UUID userId = getUserIdFromToken(token, jwtService);
     File file =
-            fileRepository
-                    .findByIdAndFolderId(fileId, folderId)
-                    .orElseThrow(() -> new NotFoundException("File not found in the folder"));
+        fileRepository
+            .findByIdAndFolderId(fileId, folderId)
+            .orElseThrow(() -> new NotFoundException("File not found in the folder"));
 
-    if (!file.getUserId().equals(userId)) {
-
-      throw new UnauthorizedException("Unauthorized access, failed to download file!");
-    }
+    authorizeUser(file, userId, File::getUserId);
 
     fileRepository.delete(file);
-
   }
 
   @Override
-  public void moveFileToAnotherFolder(String token, UUID folderId, UUID fileId) {}
+  public void moveFileToAnotherFolder(
+      String token, UUID currentFolderId, UUID fileId, UUID targetFolderId) {
+
+    tokenIsNotNullOrEmpty(token);
+    UUID userId = getUserIdFromToken(token, jwtService);
+    File fileToMove =
+        fileRepository
+            .findByIdAndFolderId(fileId, currentFolderId)
+            .orElseThrow(() -> new NotFoundException("File not found in the current folder"));
+
+    authorizeUser(fileToMove, userId, File::getUserId);
+
+    fileToMove.setFolderId(targetFolderId);
+    fileRepository.save(fileToMove);
+  }
 
   private boolean isNameExists(String fileName) {
     return fileRepository.findByName(fileName).isPresent();
