@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 import com.msibai.cloud.Services.JwtService;
 import com.msibai.cloud.entities.Folder;
 import com.msibai.cloud.exceptions.NotFoundException;
+import com.msibai.cloud.exceptions.RootFolderAlreadyExistsException;
 import com.msibai.cloud.exceptions.UnauthorizedException;
 import com.msibai.cloud.helpers.TestHelper;
 import com.msibai.cloud.repositories.FolderRepository;
@@ -22,6 +23,29 @@ class FolderServiceImplTest {
   @Mock FolderRepository folderRepository;
   @Mock JwtService jwtService;
   @InjectMocks FolderServiceImpl folderServiceImpl;
+
+  @Test
+  void testCreateRootFolderForNewUserSuccessfully() {
+    UUID userId = UUID.randomUUID();
+
+    when(folderRepository.findByUserIdAndIsRootFolder(userId, true)).thenReturn(Optional.empty());
+
+    assertDoesNotThrow(() -> folderServiceImpl.createRootFolderForNewUser(userId));
+    verify(folderRepository, times(1)).save(any());
+  }
+
+  @Test
+  void testCreateRootFolderForNewUserRootFolderAlreadyExistsException() {
+    UUID userId = UUID.randomUUID();
+
+    when(folderRepository.findByUserIdAndIsRootFolder(userId, true))
+        .thenReturn(Optional.of(new Folder()));
+
+    assertThrows(
+        RootFolderAlreadyExistsException.class,
+        () -> folderServiceImpl.createRootFolderForNewUser(userId));
+    verify(folderRepository, never()).save(any());
+  }
 
   @Test
   void testCreateFolderForUserWithValidInputs() {
@@ -180,10 +204,11 @@ class FolderServiceImplTest {
     when(jwtService.extractUserId(token)).thenReturn(userId.toString());
 
     when(folderRepository.findFolderByIdAndUserId(any(UUID.class), any(UUID.class)))
-            .thenReturn(Optional.empty());
+        .thenReturn(Optional.empty());
 
-    assertThrows(NotFoundException.class,
-            () -> folderServiceImpl.updateFolderByIdAndUserId(folderId, token, updatedFolderName));
+    assertThrows(
+        NotFoundException.class,
+        () -> folderServiceImpl.updateFolderByIdAndUserId(folderId, token, updatedFolderName));
   }
 
   @Test
@@ -202,9 +227,10 @@ class FolderServiceImplTest {
     existingFolder.setUserId(anotherUserId);
 
     when(folderRepository.findFolderByIdAndUserId(eq(folderId), eq(userId)))
-            .thenReturn(Optional.of(existingFolder));
+        .thenReturn(Optional.of(existingFolder));
 
-    assertThrows(UnauthorizedException.class,
-            () -> folderServiceImpl.updateFolderByIdAndUserId(folderId, token, updatedFolderName));
+    assertThrows(
+        UnauthorizedException.class,
+        () -> folderServiceImpl.updateFolderByIdAndUserId(folderId, token, updatedFolderName));
   }
 }

@@ -1,6 +1,8 @@
 package com.msibai.cloud.handlers;
 
+import com.msibai.cloud.exceptions.FolderCreationException;
 import com.msibai.cloud.exceptions.NotFoundException;
+import com.msibai.cloud.exceptions.RootFolderAlreadyExistsException;
 import com.msibai.cloud.exceptions.UnauthorizedException;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
@@ -77,5 +79,16 @@ public class CustomExceptionHandler {
   @ExceptionHandler(UnauthorizedException.class)
   public ResponseEntity<String> handleUnauthorizedException(UnauthorizedException ex) {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
+  }
+
+  @ExceptionHandler(FolderCreationException.class)
+  public ResponseEntity<String> handleFolderCreationException(FolderCreationException ex) {
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+  }
+
+  @ExceptionHandler(RootFolderAlreadyExistsException.class)
+  public ResponseEntity<String> handleRootFolderAlreadyExistsException(
+      RootFolderAlreadyExistsException ex) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
   }
 }

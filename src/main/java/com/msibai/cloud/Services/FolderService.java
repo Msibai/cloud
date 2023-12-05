@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 
 @Service
 public interface FolderService {
+
+  void createRootFolderForNewUser(UUID userId);
+
   Folder createFolderForUser(String folderName, String token);
 
   Optional<Folder> findFolderByIdAndUserId(UUID folderId, String token);

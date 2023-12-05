@@ -3,9 +3,12 @@ package com.msibai.cloud.Services.impl;
 import com.msibai.cloud.Services.FolderService;
 import com.msibai.cloud.Services.JwtService;
 import com.msibai.cloud.entities.Folder;
+import com.msibai.cloud.exceptions.FolderCreationException;
 import com.msibai.cloud.exceptions.NotFoundException;
+import com.msibai.cloud.exceptions.RootFolderAlreadyExistsException;
 import com.msibai.cloud.exceptions.UnauthorizedException;
 import com.msibai.cloud.repositories.FolderRepository;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,6 +22,22 @@ public class FolderServiceImpl implements FolderService {
 
   private final FolderRepository folderRepository;
   private final JwtService jwtService;
+
+  @Override
+  public void createRootFolderForNewUser(UUID userId) {
+
+    if (hasExistingRootFolder(userId)) {
+      throw new RootFolderAlreadyExistsException("User already has a root directory.");
+    }
+
+    Folder rootFolder = createNewFolder("Root", null, userId, true);
+
+    try {
+      folderRepository.save(rootFolder);
+    } catch (Exception ex) {
+      throw new FolderCreationException("Failed to create root folder: " + ex.getMessage());
+    }
+  }
 
   @Override
   public Folder createFolderForUser(String folderName, String token) {
@@ -114,5 +133,21 @@ public class FolderServiceImpl implements FolderService {
 
   private boolean isFolderExists(String folderName) {
     return folderRepository.findFolderByFolderName(folderName).isPresent();
+  }
+
+  private Folder createNewFolder(
+      String folderName, UUID parentFolderId, UUID userId, Boolean isRootFolder) {
+
+    return Folder.builder()
+        .folderName(folderName)
+        .userId(userId)
+        .isRootFolder(isRootFolder)
+        .creationDate(LocalDate.now())
+        .parentFolderId(parentFolderId)
+        .build();
+  }
+
+  private boolean hasExistingRootFolder(UUID userId) {
+    return folderRepository.findByUserIdAndIsRootFolder(userId, true).isPresent();
   }
 }
