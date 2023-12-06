@@ -4,8 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.msibai.cloud.exceptions.NotFoundException;
-import com.msibai.cloud.exceptions.UnauthorizedException;
+import com.msibai.cloud.exceptions.*;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
@@ -121,5 +120,53 @@ class CustomExceptionHandlerTest {
 
     assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
     assertEquals("Unauthorized access", response.getBody());
+  }
+
+  @Test
+  void testHandleFolderCreationException() {
+    FolderCreationException exception = mock(FolderCreationException.class);
+    when(exception.getMessage()).thenReturn("Failed to create root folder: ");
+
+    ResponseEntity<String> response =
+        customExceptionHandler.handleFolderCreationException(exception);
+
+    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+    assertEquals("Failed to create root folder: ", response.getBody());
+  }
+
+  @Test
+  void testHandleRootFolderAlreadyExistsException() {
+    RootFolderAlreadyExistsException exception = mock(RootFolderAlreadyExistsException.class);
+    when(exception.getMessage()).thenReturn("User already has a root directory.");
+
+    ResponseEntity<String> response =
+        customExceptionHandler.handleRootFolderAlreadyExistsException(exception);
+
+    assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+    assertEquals("User already has a root directory.", response.getBody());
+  }
+
+  @Test
+  void testHandleFolderNameNotUniqueException() {
+    FolderNameNotUniqueException exception = mock(FolderNameNotUniqueException.class);
+    when(exception.getMessage()).thenReturn("Folder name must be unique within the directory.");
+
+    ResponseEntity<String> response =
+        customExceptionHandler.handleFolderNameNotUniqueException(exception);
+
+    assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+    assertEquals("Folder name must be unique within the directory.", response.getBody());
+  }
+
+  @Test
+  void testHandleFolderUpdateException() {
+    FolderUpdateException exception = mock(FolderUpdateException.class);
+    when(exception.getMessage()).thenReturn("Failed to rename folder");
+
+    ResponseEntity<String> response =
+            customExceptionHandler.handleFolderUpdateException(exception);
+
+    assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+    assertEquals("Failed to rename folder", response.getBody());
   }
 }

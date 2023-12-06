@@ -1,7 +1,6 @@
 package com.msibai.cloud.handlers;
 
-import com.msibai.cloud.exceptions.NotFoundException;
-import com.msibai.cloud.exceptions.UnauthorizedException;
+import com.msibai.cloud.exceptions.*;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
@@ -77,5 +76,28 @@ public class CustomExceptionHandler {
   @ExceptionHandler(UnauthorizedException.class)
   public ResponseEntity<String> handleUnauthorizedException(UnauthorizedException ex) {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
+  }
+
+  @ExceptionHandler(FolderCreationException.class)
+  public ResponseEntity<String> handleFolderCreationException(FolderCreationException ex) {
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+  }
+
+  @ExceptionHandler(RootFolderAlreadyExistsException.class)
+  public ResponseEntity<String> handleRootFolderAlreadyExistsException(
+      RootFolderAlreadyExistsException ex) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+  }
+
+  @ExceptionHandler(FolderNameNotUniqueException.class)
+  public ResponseEntity<String> handleFolderNameNotUniqueException(
+      FolderNameNotUniqueException ex) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+  }
+
+  @ExceptionHandler(FolderUpdateException.class)
+  public ResponseEntity<String> handleFolderUpdateException(
+          FolderUpdateException ex) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
   }
 }

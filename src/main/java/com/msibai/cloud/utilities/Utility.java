@@ -1,7 +1,10 @@
 package com.msibai.cloud.utilities;
 
 import com.msibai.cloud.Services.JwtService;
+import com.msibai.cloud.entities.Folder;
+import com.msibai.cloud.exceptions.NotFoundException;
 import com.msibai.cloud.exceptions.UnauthorizedException;
+import com.msibai.cloud.repositories.FolderRepository;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -23,11 +26,27 @@ public final class Utility {
     }
   }
 
-  public static <T> void authorizeUser(T object, UUID userId, Function<T, UUID> getUserIdFunction) {
+  public static <T> void authorizeUserAccess(
+      T object, UUID userId, Function<T, UUID> getUserIdFunction) {
     UUID objectId = getUserIdFunction.apply(object);
 
     if (!objectId.equals(userId)) {
       throw new UnauthorizedException("Unauthorized access!");
     }
+  }
+
+  public static void validateInput(Object input, String fieldName) {
+    if (input == null
+        || (input instanceof String && ((String) input).trim().isEmpty())
+        || (input instanceof UUID && input.toString().isEmpty())) {
+      throw new IllegalArgumentException(fieldName + " cannot be null or empty.");
+    }
+  }
+
+  public static Folder getFolderByIdOrThrow(UUID folderId, FolderRepository folderRepository) {
+
+    return folderRepository
+        .findById(folderId)
+        .orElseThrow(() -> new NotFoundException("Folder not found with ID: " + folderId));
   }
 }

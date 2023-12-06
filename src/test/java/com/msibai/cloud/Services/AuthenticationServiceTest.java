@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.msibai.cloud.Services.impl.FolderServiceImpl;
 import com.msibai.cloud.dtos.JwtAuthenticationResponseDto;
 import com.msibai.cloud.dtos.SignInDto;
 import com.msibai.cloud.dtos.SignUpDto;
@@ -30,6 +31,7 @@ class AuthenticationServiceTest {
   @Mock JwtService jwtService;
   @Mock PasswordEncoder passwordEncoder;
   @Mock UserRepository userRepository;
+  @Mock FolderServiceImpl folderServiceImpl;
   @Mock AuthenticationManager authenticationManager;
   @InjectMocks AuthenticationService authenticationService;
 
@@ -56,6 +58,7 @@ class AuthenticationServiceTest {
 
     assertEquals("mockedJwtToken", response.getToken());
     verify(userService, times(1)).save(any(User.class));
+    verify(folderServiceImpl, times(1)).createRootFolderForNewUser(any(UUID.class));
   }
 
   @Test

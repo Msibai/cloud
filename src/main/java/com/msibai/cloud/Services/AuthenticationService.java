@@ -1,5 +1,6 @@
 package com.msibai.cloud.Services;
 
+import com.msibai.cloud.Services.impl.FolderServiceImpl;
 import com.msibai.cloud.dtos.JwtAuthenticationResponseDto;
 import com.msibai.cloud.dtos.SignInDto;
 import com.msibai.cloud.dtos.SignUpDto;
@@ -22,6 +23,7 @@ public class AuthenticationService {
   private final JwtService jwtService;
   private final UserRepository userRepository;
   private final AuthenticationManager authenticationManager;
+  private final FolderServiceImpl folderServiceImpl;
 
   public JwtAuthenticationResponseDto signUp(SignUpDto signUpDto) {
 
@@ -41,6 +43,8 @@ public class AuthenticationService {
 
     user = userService.save(user);
     var userId = user.getId();
+    folderServiceImpl.createRootFolderForNewUser(userId);
+
     var jwt = jwtService.generateToken(user, userId);
 
     return JwtAuthenticationResponseDto.builder().token(jwt).build();
