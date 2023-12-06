@@ -1,19 +1,18 @@
 package com.msibai.cloud.Services.impl;
 
+import static com.msibai.cloud.utilities.Utility.*;
+
 import com.msibai.cloud.Services.FolderService;
 import com.msibai.cloud.Services.JwtService;
 import com.msibai.cloud.entities.Folder;
-import com.msibai.cloud.exceptions.FolderCreationException;
-import com.msibai.cloud.exceptions.NotFoundException;
-import com.msibai.cloud.exceptions.RootFolderAlreadyExistsException;
-import com.msibai.cloud.exceptions.UnauthorizedException;
+import com.msibai.cloud.entities.User;
+import com.msibai.cloud.exceptions.*;
 import com.msibai.cloud.repositories.FolderRepository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 @AllArgsConstructor
@@ -40,23 +39,25 @@ public class FolderServiceImpl implements FolderService {
   }
 
   @Override
-  public Folder createFolderForUser(String folderName, String token) {
+  public void createFolderForUser(User user, UUID parentFolderId, String folderName) {
 
-    if (isFolderExists(folderName)) {
-      throw new DuplicateKeyException("Folder with the same name already exist");
+    validateInput(parentFolderId, "Parent folder ID");
+    validateInput(folderName, "Folder name");
+
+    UUID userId = user.getId();
+
+    Folder parentFolder = getFolderByIdOrThrow(parentFolderId, folderRepository);
+    authorizeUserAccess(parentFolder, userId, Folder::getUserId);
+
+    validateFolderNameUniqueness(folderRepository, userId, parentFolderId, folderName);
+
+    Folder newFolder = createNewFolder(folderName, parentFolderId, userId, false);
+
+    try {
+      folderRepository.save(newFolder);
+    } catch (Exception ex) {
+      throw new FolderCreationException("Failed to create folder: " + ex.getMessage());
     }
-
-    var userId = jwtService.extractUserId(token);
-
-    if (userId == null || userId.isEmpty() || folderName.isEmpty()) {
-      throw new IllegalArgumentException("Invalid user ID or folder name");
-    }
-
-    Folder folder = new Folder();
-    folder.setFolderName(folderName);
-    folder.setUserId(UUID.fromString(userId));
-
-    return folderRepository.save(folder);
   }
 
   @Override
@@ -149,5 +150,16 @@ public class FolderServiceImpl implements FolderService {
 
   private boolean hasExistingRootFolder(UUID userId) {
     return folderRepository.findByUserIdAndIsRootFolder(userId, true).isPresent();
+  }
+
+  private void validateFolderNameUniqueness(
+      FolderRepository folderRepository, UUID userId, UUID parentFolderId, String name) {
+
+    Optional<Folder> existingFolderWithSameName =
+        folderRepository.findByUserIdAndParentFolderIdAndFolderName(userId, parentFolderId, name);
+
+    if (existingFolderWithSameName.isPresent()) {
+      throw new FolderNameNotUniqueException("Folder name must be unique within the directory.");
+    }
   }
 }

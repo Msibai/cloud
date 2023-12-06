@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import com.msibai.cloud.Services.impl.FolderServiceImpl;
 import com.msibai.cloud.entities.Folder;
+import com.msibai.cloud.entities.User;
 import com.msibai.cloud.helpers.TestHelper;
 import java.util.*;
 import org.junit.jupiter.api.Test;
@@ -25,25 +26,30 @@ class FolderControllerTest {
   @Test
   void testCreateFolderSuccessfully() {
 
+    User user = new User();
+    user.setId(UUID.randomUUID());
+    UUID parentFolderId = UUID.randomUUID();
     String folderName = "Test folder";
-    String token = "validToken";
 
-    ResponseEntity<String> response = folderController.createFolder(token, folderName);
+    ResponseEntity<String> response =
+        folderController.createFolder(user, parentFolderId, folderName);
 
-    verify(folderServiceImpl, times(1)).createFolderForUser(folderName, token);
+    verify(folderServiceImpl, times(1)).createFolderForUser(user, parentFolderId, folderName);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
   }
 
   @Test
   void testCreateFolderWithEmptyFolderName() {
-
+    User user = new User();
+    user.setId(UUID.randomUUID());
+    UUID parentFolderId = UUID.randomUUID();
     String folderName = "";
-    String token = "validToken";
 
-    ResponseEntity<String> response = folderController.createFolder(token, folderName);
+    ResponseEntity<String> response =
+        folderController.createFolder(user, parentFolderId, folderName);
 
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-    verify(folderServiceImpl, never()).createFolderForUser(anyString(), anyString());
+    verify(folderServiceImpl, never()).createFolderForUser(user, parentFolderId, folderName);
   }
 
   @Test

@@ -59,7 +59,7 @@ public class FileServiceImpl implements FileService {
             .findByIdAndFolderId(fileId, folderId)
             .orElseThrow(() -> new NotFoundException("File not found in the folder"));
 
-    authorizeUser(file, userId, File::getUserId);
+    authorizeUserAccess(file, userId, File::getUserId);
 
     return FileDto.builder()
         .name(file.getName())
@@ -78,7 +78,7 @@ public class FileServiceImpl implements FileService {
             .findByIdAndFolderId(fileId, folderId)
             .orElseThrow(() -> new NotFoundException("File not found in the folder"));
 
-    authorizeUser(file, userId, File::getUserId);
+    authorizeUserAccess(file, userId, File::getUserId);
 
     fileRepository.delete(file);
   }
@@ -94,7 +94,7 @@ public class FileServiceImpl implements FileService {
             .findByIdAndFolderId(fileId, currentFolderId)
             .orElseThrow(() -> new NotFoundException("File not found in the current folder"));
 
-    authorizeUser(fileToMove, userId, File::getUserId);
+    authorizeUserAccess(fileToMove, userId, File::getUserId);
 
     fileToMove.setFolderId(targetFolderId);
     fileRepository.save(fileToMove);

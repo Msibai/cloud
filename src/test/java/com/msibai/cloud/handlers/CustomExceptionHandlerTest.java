@@ -4,10 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.msibai.cloud.exceptions.FolderCreationException;
-import com.msibai.cloud.exceptions.NotFoundException;
-import com.msibai.cloud.exceptions.RootFolderAlreadyExistsException;
-import com.msibai.cloud.exceptions.UnauthorizedException;
+import com.msibai.cloud.exceptions.*;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
@@ -147,5 +144,17 @@ class CustomExceptionHandlerTest {
 
     assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
     assertEquals("User already has a root directory.", response.getBody());
+  }
+
+  @Test
+  void testHandleFolderNameNotUniqueException() {
+    FolderNameNotUniqueException exception = mock(FolderNameNotUniqueException.class);
+    when(exception.getMessage()).thenReturn("Folder name must be unique within the directory.");
+
+    ResponseEntity<String> response =
+        customExceptionHandler.handleFolderNameNotUniqueException(exception);
+
+    assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+    assertEquals("Folder name must be unique within the directory.", response.getBody());
   }
 }

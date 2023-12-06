@@ -2,12 +2,14 @@ package com.msibai.cloud.controllers;
 
 import com.msibai.cloud.Services.impl.FolderServiceImpl;
 import com.msibai.cloud.entities.Folder;
+import com.msibai.cloud.entities.User;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -17,15 +19,17 @@ public class FolderController {
 
   private final FolderServiceImpl folderServiceImpl;
 
-  @PostMapping("/create")
+  @PostMapping("/{parent-folder-id}/create")
   public ResponseEntity<String> createFolder(
-      @RequestHeader("Authorization") String token, String folderName) {
+      @AuthenticationPrincipal User user,
+      @PathVariable("parent-folder-id") UUID parentFolderId,
+      String folderName) {
 
     if (folderName == null || folderName.isEmpty()) {
       return ResponseEntity.badRequest().body("Folder name cannot be empty");
     }
 
-    folderServiceImpl.createFolderForUser(folderName, token);
+    folderServiceImpl.createFolderForUser(user, parentFolderId, folderName);
 
     return ResponseEntity.status(HttpStatus.CREATED).body(folderName + " created successfully");
   }

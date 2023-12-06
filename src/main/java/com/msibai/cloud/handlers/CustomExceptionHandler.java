@@ -1,9 +1,6 @@
 package com.msibai.cloud.handlers;
 
-import com.msibai.cloud.exceptions.FolderCreationException;
-import com.msibai.cloud.exceptions.NotFoundException;
-import com.msibai.cloud.exceptions.RootFolderAlreadyExistsException;
-import com.msibai.cloud.exceptions.UnauthorizedException;
+import com.msibai.cloud.exceptions.*;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
@@ -89,6 +86,12 @@ public class CustomExceptionHandler {
   @ExceptionHandler(RootFolderAlreadyExistsException.class)
   public ResponseEntity<String> handleRootFolderAlreadyExistsException(
       RootFolderAlreadyExistsException ex) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+  }
+
+  @ExceptionHandler(FolderNameNotUniqueException.class)
+  public ResponseEntity<String> handleFolderNameNotUniqueException(
+      FolderNameNotUniqueException ex) {
     return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
   }
 }

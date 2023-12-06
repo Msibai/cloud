@@ -5,16 +5,21 @@ import static org.mockito.Mockito.*;
 
 import com.msibai.cloud.Services.JwtService;
 import com.msibai.cloud.entities.Folder;
+import com.msibai.cloud.entities.User;
 import com.msibai.cloud.exceptions.NotFoundException;
 import com.msibai.cloud.exceptions.RootFolderAlreadyExistsException;
 import com.msibai.cloud.exceptions.UnauthorizedException;
 import com.msibai.cloud.helpers.TestHelper;
 import com.msibai.cloud.repositories.FolderRepository;
+import com.msibai.cloud.utilities.Utility;
 import java.util.*;
+import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -48,54 +53,67 @@ class FolderServiceImplTest {
   }
 
   @Test
-  void testCreateFolderForUserWithValidInputs() {
+  public void testCreateFolderForUserSuccessfully() {
 
-    String folderName = "Test Folder";
-    String token = "validToken";
-    String userId = UUID.randomUUID().toString();
+    User user = new User();
+    user.setId(UUID.randomUUID());
+    UUID parentFolderId = UUID.randomUUID();
+    String folderName = "NewFolder";
 
-    when(jwtService.extractUserId(token)).thenReturn(userId);
+    when(folderRepository.save(any(Folder.class))).thenReturn(new Folder());
 
-    folderServiceImpl.createFolderForUser(folderName, token);
+    try (MockedStatic<Utility> utilityClassMock = mockStatic(Utility.class)) {
+      utilityClassMock
+          .when(() -> Utility.getFolderByIdOrThrow(eq(parentFolderId), any(FolderRepository.class)))
+          .thenReturn(new Folder());
 
-    verify(jwtService).extractUserId(token);
-    verify(folderRepository)
-        .save(
-            argThat(
-                folder ->
-                    folder.getFolderName().equals(folderName)
-                        && folder.getUserId().equals(UUID.fromString(userId))));
+      assertDoesNotThrow(
+          () -> folderServiceImpl.createFolderForUser(user, parentFolderId, folderName));
+      verify(folderRepository, Mockito.times(1)).save(any(Folder.class));
+    }
   }
 
   @Test
-  void testCreateFolderForUserWithEmptyName() {
+  public void testCreateFolderForUserFailureFolderNotFound() {
+    User user = new User();
+    user.setId(UUID.randomUUID());
+    UUID parentFolderId = UUID.randomUUID();
+    String folderName = "NewFolder";
 
-    String token = "validToken";
-    String folderName = "";
-    String userId = UUID.randomUUID().toString();
+    try (MockedStatic<Utility> utilityClassMock = Mockito.mockStatic(Utility.class)) {
+      utilityClassMock
+          .when(() -> Utility.getFolderByIdOrThrow(eq(parentFolderId), any(FolderRepository.class)))
+          .thenThrow(new NotFoundException("Folder not found with ID: " + parentFolderId));
 
-    when(jwtService.extractUserId(token)).thenReturn(userId);
-
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> folderServiceImpl.createFolderForUser(folderName, token));
-    verify(jwtService).extractUserId(token);
-    verify(folderRepository, never()).save(any());
+      assertThrows(
+          NotFoundException.class,
+          () -> folderServiceImpl.createFolderForUser(user, parentFolderId, folderName));
+    }
   }
 
   @Test
-  void testCreateFolderForUserWithTokenWithoutUserId() {
+  public void testCreateFolderForUserFailureUnauthorizedAccess() {
+    User user = new User();
+    user.setId(UUID.randomUUID());
+    UUID parentFolderId = UUID.randomUUID();
+    String folderName = "NewFolder";
 
-    String token = "tokenWithoutUserId";
-    String folderName = "Test Folder";
+    try (MockedStatic<Utility> utilityClassMock = Mockito.mockStatic(Utility.class)) {
+      utilityClassMock
+          .when(() -> Utility.getFolderByIdOrThrow(eq(parentFolderId), any(FolderRepository.class)))
+          .thenReturn(new Folder());
 
-    when(jwtService.extractUserId(token)).thenReturn("");
+      utilityClassMock
+          .when(
+              () ->
+                  Utility.authorizeUserAccess(
+                      any(Folder.class), eq(user.getId()), any(Function.class)))
+          .thenThrow(new UnauthorizedException("Unauthorized access!"));
 
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> folderServiceImpl.createFolderForUser(folderName, token));
-    verify(jwtService).extractUserId(token);
-    verify(folderRepository, never()).save(any());
+      assertThrows(
+          UnauthorizedException.class,
+          () -> folderServiceImpl.createFolderForUser(user, parentFolderId, folderName));
+    }
   }
 
   @Test
