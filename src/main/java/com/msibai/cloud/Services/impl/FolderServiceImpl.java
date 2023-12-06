@@ -3,7 +3,6 @@ package com.msibai.cloud.Services.impl;
 import static com.msibai.cloud.utilities.Utility.*;
 
 import com.msibai.cloud.Services.FolderService;
-import com.msibai.cloud.Services.JwtService;
 import com.msibai.cloud.dtos.FolderDto;
 import com.msibai.cloud.entities.Folder;
 import com.msibai.cloud.entities.User;
@@ -23,7 +22,6 @@ import org.springframework.stereotype.Service;
 public class FolderServiceImpl implements FolderService {
 
   private final FolderRepository folderRepository;
-  private final JwtService jwtService;
   private final FolderMapperImpl folderMapperImpl;
 
   @Override
@@ -93,7 +91,7 @@ public class FolderServiceImpl implements FolderService {
     authorizeUserAccess(existingFolder, userId, Folder::getUserId);
 
     validateFolderNameUniqueness(
-            folderRepository, userId, existingFolder.getParentFolderId(), newFolderName);
+        folderRepository, userId, existingFolder.getParentFolderId(), newFolderName);
 
     existingFolder.setFolderName(newFolderName);
 
@@ -106,78 +104,6 @@ public class FolderServiceImpl implements FolderService {
 
     return folderMapperImpl.mapTo(existingFolder);
   }
-
-  @Override
-  public Optional<Folder> findFolderByIdAndUserId(UUID folderId, String token) {
-
-    if (folderId == null || token == null || token.isEmpty()) {
-      throw new IllegalArgumentException("Invalid folder ID or Invalid token");
-    }
-
-    UUID userId;
-    try {
-      userId = UUID.fromString(jwtService.extractUserId(token));
-    } catch (IllegalArgumentException e) {
-      throw new IllegalArgumentException("Invalid user ID in the token");
-    }
-
-    Optional<Folder> optionalFolder = folderRepository.findFolderByIdAndUserId(folderId, userId);
-    if (optionalFolder.isPresent()) {
-      Folder folder = optionalFolder.get();
-      UUID folderUserId = folder.getUserId();
-
-      if (!userId.equals(folderUserId)) {
-        // Unauthorized access, return empty optional
-        return Optional.empty();
-      }
-    } else {
-      // Folder not found for the provided folderId and userId
-      return Optional.empty();
-    }
-
-    return optionalFolder;
-  }
-
-  @Override
-  public List<Folder> findAllFoldersByUserId(String token) {
-
-    if (token == null || token.isEmpty()) {
-      throw new IllegalArgumentException("Invalid token");
-    }
-
-    UUID userId;
-    try {
-      userId = UUID.fromString(jwtService.extractUserId(token));
-    } catch (IllegalArgumentException e) {
-      throw new IllegalArgumentException("Invalid user ID in the token");
-    }
-
-    return folderRepository.findAllByUserId(userId);
-  }
-
-  @Override
-  public boolean updateFolderByIdAndUserId(UUID folderId, String token, String updatedFolderName) {
-
-    UUID userId = UUID.fromString(jwtService.extractUserId(token));
-
-    Folder existingFolder =
-        folderRepository
-            .findFolderByIdAndUserId(folderId, userId)
-            .orElseThrow(() -> new NotFoundException("Folder not found"));
-
-    if (!existingFolder.getUserId().equals(userId)) {
-
-      throw new UnauthorizedException("Unauthorized access to update folder");
-    }
-
-    existingFolder.setFolderName(updatedFolderName);
-    folderRepository.save(existingFolder);
-
-    return true;
-  }
-
-  @Override
-  public void deleteFolderByIdAndUserId(UUID folderId, String token) {}
 
   private Folder createNewFolder(
       String folderName, UUID parentFolderId, UUID userId, Boolean isRootFolder) {

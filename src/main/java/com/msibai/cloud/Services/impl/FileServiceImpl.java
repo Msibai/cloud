@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 public class FileServiceImpl implements FileService {
 
   private JwtService jwtService;
-  private FolderServiceImpl folderServiceImpl;
   private FileRepository fileRepository;
 
   @Override
@@ -29,12 +28,6 @@ public class FileServiceImpl implements FileService {
     }
     tokenIsNotNullOrEmpty(token);
     UUID userId = getUserIdFromToken(token, jwtService);
-
-    folderServiceImpl
-        .findFolderByIdAndUserId(folderId, token)
-        .orElseThrow(
-            () ->
-                new NotFoundException("Folder not found or you don't have access to this folder!"));
 
     File newFile =
         File.builder()
