@@ -157,4 +157,16 @@ class CustomExceptionHandlerTest {
     assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
     assertEquals("Folder name must be unique within the directory.", response.getBody());
   }
+
+  @Test
+  void testHandleFolderUpdateException() {
+    FolderUpdateException exception = mock(FolderUpdateException.class);
+    when(exception.getMessage()).thenReturn("Failed to rename folder");
+
+    ResponseEntity<String> response =
+            customExceptionHandler.handleFolderUpdateException(exception);
+
+    assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+    assertEquals("Failed to rename folder", response.getBody());
+  }
 }

@@ -69,6 +69,27 @@ class FolderControllerTest {
   }
 
   @Test
+  public void testUpdateFolderNameSuccessfully() {
+
+    User user = new User();
+    UUID folderId = UUID.randomUUID();
+    String newFolderName = "NewFolderName";
+
+    doAnswer(
+            invocation -> {
+              return null;
+            })
+        .when(folderServiceImpl)
+        .updateFolderName(any(User.class), any(UUID.class), any(String.class));
+
+    ResponseEntity<String> response =
+        folderController.updateFolderName(user, folderId, newFolderName);
+
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals("Folder name updated successfully", response.getBody());
+  }
+
+  @Test
   public void testFindFolderById_ValidUUID() {
 
     UUID folderId = UUID.randomUUID();
@@ -147,23 +168,6 @@ class FolderControllerTest {
 
     assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
     verifyNoInteractions(folderServiceImpl);
-  }
-
-  @Test
-  void testUpdateFolderNameSuccessfully() {
-    String token = "validToken";
-    String folderId = UUID.randomUUID().toString();
-    String updatedFolderName = "Updated Folder Name";
-
-    when(folderServiceImpl.updateFolderByIdAndUserId(
-            any(UUID.class), eq(token), eq(updatedFolderName)))
-        .thenReturn(true);
-
-    ResponseEntity<String> response =
-        folderController.updateFolderName(token, folderId, updatedFolderName);
-
-    assertEquals("200 OK", response.getStatusCode().toString());
-    assertEquals("Folder name updated successfully", response.getBody());
   }
 
   @Test

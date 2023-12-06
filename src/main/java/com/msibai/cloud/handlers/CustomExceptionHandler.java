@@ -94,4 +94,10 @@ public class CustomExceptionHandler {
       FolderNameNotUniqueException ex) {
     return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
   }
+
+  @ExceptionHandler(FolderUpdateException.class)
+  public ResponseEntity<String> handleFolderUpdateException(
+          FolderUpdateException ex) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+  }
 }

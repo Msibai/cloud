@@ -17,6 +17,8 @@ public interface FolderService {
 
   List<FolderDto> findSubFolders(User user, UUID folderId);
 
+  FolderDto updateFolderName(User user, UUID folderId, String newFolderName);
+
   Optional<Folder> findFolderByIdAndUserId(UUID folderId, String token);
 
   List<Folder> findAllFoldersByUserId(String token);

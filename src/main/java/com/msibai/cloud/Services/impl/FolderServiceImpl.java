@@ -24,7 +24,7 @@ public class FolderServiceImpl implements FolderService {
 
   private final FolderRepository folderRepository;
   private final JwtService jwtService;
-  private final FolderMapperImpl FolderMapperImpl;
+  private final FolderMapperImpl folderMapperImpl;
 
   @Override
   public void createRootFolderForNewUser(UUID userId) {
@@ -74,7 +74,37 @@ public class FolderServiceImpl implements FolderService {
 
     List<Folder> subFolders = folderRepository.getFoldersByParentFolderId(folderId);
 
-    return subFolders.stream().map(FolderMapperImpl::mapTo).collect(Collectors.toList());
+    return subFolders.stream().map(folderMapperImpl::mapTo).collect(Collectors.toList());
+  }
+
+  @Override
+  public FolderDto updateFolderName(User user, UUID folderId, String newFolderName) {
+
+    validateInput(newFolderName, "Folder name");
+
+    UUID userId = user.getId();
+
+    Folder existingFolder = getFolderByIdOrThrow(folderId, folderRepository);
+
+    if (existingFolder.isRootFolder()) {
+      throw new FolderUpdateException("Cannot update the name of the root directory.");
+    }
+
+    authorizeUserAccess(existingFolder, userId, Folder::getUserId);
+
+    validateFolderNameUniqueness(
+            folderRepository, userId, existingFolder.getParentFolderId(), newFolderName);
+
+    existingFolder.setFolderName(newFolderName);
+
+    try {
+
+      folderRepository.save(existingFolder);
+    } catch (Exception ex) {
+      throw new FolderUpdateException("Failed to rename folder: " + ex.getMessage());
+    }
+
+    return folderMapperImpl.mapTo(existingFolder);
   }
 
   @Override

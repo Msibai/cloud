@@ -9,9 +9,7 @@ import com.msibai.cloud.Services.JwtService;
 import com.msibai.cloud.dtos.FolderDto;
 import com.msibai.cloud.entities.Folder;
 import com.msibai.cloud.entities.User;
-import com.msibai.cloud.exceptions.NotFoundException;
-import com.msibai.cloud.exceptions.RootFolderAlreadyExistsException;
-import com.msibai.cloud.exceptions.UnauthorizedException;
+import com.msibai.cloud.exceptions.*;
 import com.msibai.cloud.helpers.TestHelper;
 import com.msibai.cloud.mappers.impl.FolderMapperImpl;
 import com.msibai.cloud.repositories.FolderRepository;
@@ -31,7 +29,7 @@ class FolderServiceImplTest {
   private final TestHelper testHelper = new TestHelper();
   @Mock FolderRepository folderRepository;
   @Mock JwtService jwtService;
-  @Mock FolderMapperImpl folderMapperImp;
+  @Mock FolderMapperImpl folderMapperImpl;
   @InjectMocks FolderServiceImpl folderServiceImpl;
 
   @Test
@@ -178,6 +176,92 @@ class FolderServiceImplTest {
       assertThrows(
           UnauthorizedException.class,
           () -> folderServiceImpl.findSubFolders(user, parentFolderId));
+    }
+  }
+
+  @Test
+  public void testUpdateFolderNameSuccessfully() {
+
+    User user = new User();
+    UUID folderId = UUID.randomUUID();
+    String newFolderName = "NewFolderName";
+    Folder existingFolder = new Folder();
+
+    try (MockedStatic<Utility> utilityClassMock = mockStatic(Utility.class)) {
+      utilityClassMock
+          .when(() -> Utility.getFolderByIdOrThrow(eq(folderId), any(FolderRepository.class)))
+          .thenReturn(existingFolder);
+
+      when(folderRepository.save(any(Folder.class))).thenReturn(existingFolder);
+      when(folderMapperImpl.mapTo(any(Folder.class)))
+          .thenAnswer(
+              invocation -> {
+                Folder folderArgument = invocation.getArgument(0);
+                FolderDto folderDto = new FolderDto();
+                folderDto.setName(folderArgument.getFolderName());
+                return folderDto;
+              });
+
+      FolderDto updatedFolder = folderServiceImpl.updateFolderName(user, folderId, newFolderName);
+
+      assertNotNull(updatedFolder);
+      assertEquals(newFolderName, updatedFolder.getName());
+    }
+  }
+
+  @Test
+  public void testUpdateFolderNameRootFolderRenameAttempt() {
+    User user = new User();
+    UUID folderId = UUID.randomUUID();
+    String newFolderName = "NewFolderName";
+
+    Folder rootFolder = new Folder();
+    rootFolder.setRootFolder(true);
+
+    try (MockedStatic<Utility> utilityClassMock = mockStatic(Utility.class)) {
+      utilityClassMock
+          .when(() -> Utility.getFolderByIdOrThrow(eq(folderId), any(FolderRepository.class)))
+          .thenReturn(rootFolder);
+
+      assertThrows(
+          FolderUpdateException.class,
+          () -> {
+            folderServiceImpl.updateFolderName(user, folderId, newFolderName);
+          });
+    }
+  }
+
+  @Test
+  public void testUpdateFolderNameFailureNameAlreadyExists() {
+    User user = new User();
+    user.setId(UUID.randomUUID());
+
+    UUID folderId = UUID.randomUUID();
+    UUID parentFolderId = UUID.randomUUID();
+    String existingFolderName = "ExistingFolder";
+    String newFolderName = "ExistingFolder";
+    Folder existingFolder = new Folder();
+    existingFolder.setFolderName(existingFolderName);
+    existingFolder.setParentFolderId(parentFolderId);
+    existingFolder.setId(folderId);
+
+    try (MockedStatic<Utility> utilityClassMock = mockStatic(Utility.class)) {
+      utilityClassMock
+          .when(() -> Utility.getFolderByIdOrThrow(eq(folderId), any(FolderRepository.class)))
+          .thenReturn(existingFolder);
+
+      when(folderRepository.findByUserIdAndParentFolderIdAndFolderName(
+              eq(user.getId()), eq(parentFolderId), eq(newFolderName)))
+          .thenReturn(Optional.of(existingFolder));
+
+      Throwable exception =
+          assertThrows(
+              FolderNameNotUniqueException.class,
+              () -> {
+                folderServiceImpl.updateFolderName(user, folderId, newFolderName);
+              });
+
+      assertEquals("Folder name must be unique within the directory.", exception.getMessage());
     }
   }
 

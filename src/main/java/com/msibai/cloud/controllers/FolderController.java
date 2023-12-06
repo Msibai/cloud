@@ -44,6 +44,21 @@ public class FolderController {
     return ResponseEntity.ok(subFolders);
   }
 
+  @PutMapping("/{folder-id}/update")
+  public ResponseEntity<String> updateFolderName(
+          @AuthenticationPrincipal User user,
+          @PathVariable("folder-id") UUID folderId,
+          @RequestParam("new-folder-name") String newFolderName) {
+
+    if (newFolderName == null || newFolderName.isEmpty()) {
+      return ResponseEntity.badRequest().body("Invalid new folder name.");
+    }
+
+    folderServiceImpl.updateFolderName(user, folderId, newFolderName);
+
+    return ResponseEntity.ok("Folder name updated successfully");
+  }
+
   @GetMapping("/{folderId}")
   public ResponseEntity<String> findFolderById(
       @RequestHeader("Authorization") String token, @PathVariable String folderId) {
