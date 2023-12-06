@@ -1,15 +1,19 @@
 package com.msibai.cloud.Services.impl;
 
+import static com.msibai.cloud.utilities.Utility.authorizeUserAccess;
+import static com.msibai.cloud.utilities.Utility.getFolderByIdOrThrow;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.msibai.cloud.Services.JwtService;
+import com.msibai.cloud.dtos.FolderDto;
 import com.msibai.cloud.entities.Folder;
 import com.msibai.cloud.entities.User;
 import com.msibai.cloud.exceptions.NotFoundException;
 import com.msibai.cloud.exceptions.RootFolderAlreadyExistsException;
 import com.msibai.cloud.exceptions.UnauthorizedException;
 import com.msibai.cloud.helpers.TestHelper;
+import com.msibai.cloud.mappers.impl.FolderMapperImpl;
 import com.msibai.cloud.repositories.FolderRepository;
 import com.msibai.cloud.utilities.Utility;
 import java.util.*;
@@ -27,6 +31,7 @@ class FolderServiceImplTest {
   private final TestHelper testHelper = new TestHelper();
   @Mock FolderRepository folderRepository;
   @Mock JwtService jwtService;
+  @Mock FolderMapperImpl folderMapperImp;
   @InjectMocks FolderServiceImpl folderServiceImpl;
 
   @Test
@@ -64,7 +69,7 @@ class FolderServiceImplTest {
 
     try (MockedStatic<Utility> utilityClassMock = mockStatic(Utility.class)) {
       utilityClassMock
-          .when(() -> Utility.getFolderByIdOrThrow(eq(parentFolderId), any(FolderRepository.class)))
+          .when(() -> getFolderByIdOrThrow(eq(parentFolderId), any(FolderRepository.class)))
           .thenReturn(new Folder());
 
       assertDoesNotThrow(
@@ -82,7 +87,7 @@ class FolderServiceImplTest {
 
     try (MockedStatic<Utility> utilityClassMock = Mockito.mockStatic(Utility.class)) {
       utilityClassMock
-          .when(() -> Utility.getFolderByIdOrThrow(eq(parentFolderId), any(FolderRepository.class)))
+          .when(() -> getFolderByIdOrThrow(eq(parentFolderId), any(FolderRepository.class)))
           .thenThrow(new NotFoundException("Folder not found with ID: " + parentFolderId));
 
       assertThrows(
@@ -100,19 +105,79 @@ class FolderServiceImplTest {
 
     try (MockedStatic<Utility> utilityClassMock = Mockito.mockStatic(Utility.class)) {
       utilityClassMock
-          .when(() -> Utility.getFolderByIdOrThrow(eq(parentFolderId), any(FolderRepository.class)))
+          .when(() -> getFolderByIdOrThrow(eq(parentFolderId), any(FolderRepository.class)))
           .thenReturn(new Folder());
 
       utilityClassMock
-          .when(
-              () ->
-                  Utility.authorizeUserAccess(
-                      any(Folder.class), eq(user.getId()), any(Function.class)))
+          .when(() -> authorizeUserAccess(any(Folder.class), eq(user.getId()), any(Function.class)))
           .thenThrow(new UnauthorizedException("Unauthorized access!"));
 
       assertThrows(
           UnauthorizedException.class,
           () -> folderServiceImpl.createFolderForUser(user, parentFolderId, folderName));
+    }
+  }
+
+  @Test
+  public void testFindSubFoldersSuccessfully() {
+    User user = new User();
+    UUID parentFolderId = UUID.randomUUID();
+
+    try (MockedStatic<Utility> utilityClassMock = mockStatic(Utility.class)) {
+      utilityClassMock
+          .when(() -> getFolderByIdOrThrow(eq(parentFolderId), any(FolderRepository.class)))
+          .thenReturn(new Folder());
+
+      List<Folder> subFolders = new ArrayList<>();
+      subFolders.add(new Folder());
+      System.out.println(2);
+
+      when(folderRepository.getFoldersByParentFolderId(parentFolderId)).thenReturn(subFolders);
+
+      List<FolderDto> result = folderServiceImpl.findSubFolders(user, parentFolderId);
+
+      assertNotNull(result);
+      assertEquals(subFolders.size(), result.size());
+    }
+  }
+
+  @Test
+  public void testFindSubFoldersFailureFolderNotFound() {
+
+    User user = new User();
+    UUID parentFolderId = UUID.randomUUID();
+    String folderName = "NewFolder";
+
+    try (MockedStatic<Utility> utilityClassMock = Mockito.mockStatic(Utility.class)) {
+      utilityClassMock
+          .when(() -> getFolderByIdOrThrow(eq(parentFolderId), any(FolderRepository.class)))
+          .thenThrow(new NotFoundException("Folder not found with ID: " + parentFolderId));
+
+      assertThrows(
+          NotFoundException.class,
+          () -> folderServiceImpl.createFolderForUser(user, parentFolderId, folderName));
+    }
+  }
+
+  @Test
+  public void testFindSubFoldersFailureUnauthorizedAccess() {
+
+    User user = new User();
+    user.setId(UUID.randomUUID());
+    UUID parentFolderId = UUID.randomUUID();
+
+    try (MockedStatic<Utility> utilityClassMock = mockStatic(Utility.class)) {
+      utilityClassMock
+          .when(() -> getFolderByIdOrThrow(eq(parentFolderId), any(FolderRepository.class)))
+          .thenReturn(new Folder());
+
+      utilityClassMock
+          .when(() -> authorizeUserAccess(any(Folder.class), eq(user.getId()), any(Function.class)))
+          .thenThrow(new UnauthorizedException("Unauthorized access!"));
+
+      assertThrows(
+          UnauthorizedException.class,
+          () -> folderServiceImpl.findSubFolders(user, parentFolderId));
     }
   }
 

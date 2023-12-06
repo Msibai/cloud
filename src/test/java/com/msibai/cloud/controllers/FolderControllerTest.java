@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.msibai.cloud.Services.impl.FolderServiceImpl;
+import com.msibai.cloud.dtos.FolderDto;
 import com.msibai.cloud.entities.Folder;
 import com.msibai.cloud.entities.User;
 import com.msibai.cloud.helpers.TestHelper;
@@ -50,6 +51,21 @@ class FolderControllerTest {
 
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     verify(folderServiceImpl, never()).createFolderForUser(user, parentFolderId, folderName);
+  }
+
+  @Test
+  public void testFindSubFoldersSuccessfully() {
+    User user = new User();
+    UUID folderId = UUID.randomUUID();
+
+    List<FolderDto> subFolders = new ArrayList<>();
+    subFolders.add(new FolderDto());
+    when(folderServiceImpl.findSubFolders(eq(user), eq(folderId))).thenReturn(subFolders);
+
+    ResponseEntity<List<FolderDto>> response = folderController.findSubFolders(user, folderId);
+
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(subFolders.size(), Objects.requireNonNull(response.getBody()).size());
   }
 
   @Test

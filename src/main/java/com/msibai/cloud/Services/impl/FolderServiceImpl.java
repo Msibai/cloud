@@ -4,14 +4,17 @@ import static com.msibai.cloud.utilities.Utility.*;
 
 import com.msibai.cloud.Services.FolderService;
 import com.msibai.cloud.Services.JwtService;
+import com.msibai.cloud.dtos.FolderDto;
 import com.msibai.cloud.entities.Folder;
 import com.msibai.cloud.entities.User;
 import com.msibai.cloud.exceptions.*;
+import com.msibai.cloud.mappers.impl.FolderMapperImpl;
 import com.msibai.cloud.repositories.FolderRepository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +24,7 @@ public class FolderServiceImpl implements FolderService {
 
   private final FolderRepository folderRepository;
   private final JwtService jwtService;
+  private final FolderMapperImpl FolderMapperImpl;
 
   @Override
   public void createRootFolderForNewUser(UUID userId) {
@@ -58,6 +62,19 @@ public class FolderServiceImpl implements FolderService {
     } catch (Exception ex) {
       throw new FolderCreationException("Failed to create folder: " + ex.getMessage());
     }
+  }
+
+  @Override
+  public List<FolderDto> findSubFolders(User user, UUID folderId) {
+
+    validateInput(folderId, "Folder ID");
+
+    Folder parentFolder = getFolderByIdOrThrow(folderId, folderRepository);
+    authorizeUserAccess(parentFolder, user.getId(), Folder::getUserId);
+
+    List<Folder> subFolders = folderRepository.getFoldersByParentFolderId(folderId);
+
+    return subFolders.stream().map(FolderMapperImpl::mapTo).collect(Collectors.toList());
   }
 
   @Override
@@ -131,10 +148,6 @@ public class FolderServiceImpl implements FolderService {
 
   @Override
   public void deleteFolderByIdAndUserId(UUID folderId, String token) {}
-
-  private boolean isFolderExists(String folderName) {
-    return folderRepository.findFolderByFolderName(folderName).isPresent();
-  }
 
   private Folder createNewFolder(
       String folderName, UUID parentFolderId, UUID userId, Boolean isRootFolder) {

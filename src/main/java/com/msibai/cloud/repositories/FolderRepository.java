@@ -18,4 +18,6 @@ public interface FolderRepository extends JpaRepository<Folder, UUID> {
 
   Optional<Folder> findByUserIdAndParentFolderIdAndFolderName(
       UUID userId, UUID parentFolderId, String name);
+
+  List<Folder> getFoldersByParentFolderId(UUID folderId);
 }

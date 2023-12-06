@@ -1,5 +1,6 @@
 package com.msibai.cloud.Services;
 
+import com.msibai.cloud.dtos.FolderDto;
 import com.msibai.cloud.entities.Folder;
 import com.msibai.cloud.entities.User;
 import java.util.List;
@@ -13,6 +14,8 @@ public interface FolderService {
   void createRootFolderForNewUser(UUID userId);
 
   void createFolderForUser(User user, UUID parentFolderId, String folderName);
+
+  List<FolderDto> findSubFolders(User user, UUID folderId);
 
   Optional<Folder> findFolderByIdAndUserId(UUID folderId, String token);
 
