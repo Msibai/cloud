@@ -21,6 +21,7 @@ import java.util.Base64;
 import java.util.UUID;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -68,23 +69,32 @@ public class FileServiceImpl implements FileService {
   }
 
   @Override
-  public FileDto downloadFileFromFolder(String token, UUID folderId, UUID fileId) {
+  public FileDto downloadFile(User user, UUID fileId) {
 
-    tokenIsNotNullOrEmpty(token);
-    UUID userId = getUserIdFromToken(token, jwtService);
     File file =
         fileRepository
-            .findByIdAndFolderId(fileId, folderId)
+            .findById(fileId)
             .orElseThrow(() -> new NotFoundException("File not found in the folder"));
 
-    authorizeUserAccess(file, userId, File::getUserId);
+    authorizeUserAccess(file, user.getId(), File::getUserId);
 
-    return FileDto.builder()
-        .name(file.getName())
-        .contentType(file.getContentType())
-        .content(file.getContent())
-        .size(file.getSize())
-        .build();
+    String keyStr = file.getEncryptionKey();
+    String ivStr = file.getIv();
+
+    byte[] keyBytes = Base64.getDecoder().decode(keyStr);
+    byte[] ivBytes = Base64.getDecoder().decode(ivStr);
+
+    byte[] decryptedContent =
+        decryptFile(
+            "AES/CBC/PKCS5Padding",
+            new SecretKeySpec(keyBytes, "AES"),
+            new IvParameterSpec(ivBytes),
+            file.getContent());
+
+    FileDto fileDto = fileMapperImpl.mapTo(file);
+    fileDto.setContent(decryptedContent);
+
+    return fileDto;
   }
 
   @Override

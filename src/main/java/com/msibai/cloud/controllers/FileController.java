@@ -48,13 +48,15 @@ public class FileController {
     return ResponseEntity.ok(file.getOriginalFilename() + " uploaded successfully!");
   }
 
-  @GetMapping("/folders/{folderId}/files/{fileId}/download")
-  public ResponseEntity<byte[]> downloadFileFromFolder(
-      @RequestHeader("Authorization") String token,
-      @PathVariable UUID folderId,
-      @PathVariable UUID fileId) {
+  @GetMapping("/{folder-id}/{file-id}/download")
+  public ResponseEntity<byte[]> downloadFile(
+      @AuthenticationPrincipal User user, @PathVariable("file-id") UUID fileId) {
 
-    FileDto file = fileServiceImpl.downloadFileFromFolder(token, folderId, fileId);
+    FileDto file = fileServiceImpl.downloadFile(user, fileId);
+    if (file == null) {
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
     byte[] fileData = file.getContent();
     String fileName = file.getName();
     String contentType = file.getContentType();

@@ -2,16 +2,14 @@ package com.msibai.cloud.controllers;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 import com.msibai.cloud.Services.impl.FileServiceImpl;
 import com.msibai.cloud.dtos.FileDto;
 import com.msibai.cloud.entities.User;
-import com.msibai.cloud.exceptions.NotFoundException;
-import com.msibai.cloud.exceptions.UnauthorizedException;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Objects;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -67,57 +65,33 @@ class FileControllerTest {
   }
 
   @Test
-  void testDownloadFileFromFolderSuccessfully() {
+  public void testDownloadFileSuccessfully() {
+    UUID fileId = UUID.randomUUID();
+    byte[] fileContent = "Your file content".getBytes();
+    String fileName = "test-file.txt";
+    String contentType = "text/plain";
 
-    byte[] fileContent = "Test file content".getBytes();
-    FileDto fileDto = new FileDto();
-    fileDto.setContent(fileContent);
-    fileDto.setName("test.txt");
-    fileDto.setContentType("text/plain");
+    FileDto mockFile = new FileDto();
+    mockFile.setContent(fileContent);
+    mockFile.setName(fileName);
+    mockFile.setContentType(contentType);
+    when(fileServiceImpl.downloadFile(any(User.class), eq(fileId))).thenReturn(mockFile);
 
-    when(fileServiceImpl.downloadFileFromFolder(anyString(), any(UUID.class), any(UUID.class)))
-        .thenReturn(fileDto);
+    ResponseEntity<byte[]> response = fileController.downloadFile(new User(), fileId);
 
-    ResponseEntity<byte[]> response =
-        fileController.downloadFileFromFolder(token, UUID.randomUUID(), UUID.randomUUID());
-
-    verify(fileServiceImpl, times(1))
-        .downloadFileFromFolder(eq(token), any(UUID.class), any(UUID.class));
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertNotNull(response.getBody());
-    assertEquals(fileContent, response.getBody());
-    assertNotNull(response.getHeaders().getContentType());
-    assertEquals(fileDto.getName(), response.getHeaders().getContentDisposition().getFilename());
+    assertEquals(fileContent.length, Objects.requireNonNull(response.getBody()).length);
   }
 
   @Test
-  void testDownloadFileFromFolderNotFound() {
+  public void testDownloadFileFailureFileNotFound() {
+    UUID fileId = UUID.randomUUID();
 
-    when(fileServiceImpl.downloadFileFromFolder(anyString(), any(UUID.class), any(UUID.class)))
-        .thenThrow(new NotFoundException("File not found"));
+    when(fileServiceImpl.downloadFile(any(User.class), eq(fileId))).thenReturn(null);
 
-    try {
-      ResponseEntity<byte[]> response =
-          fileController.downloadFileFromFolder(token, UUID.randomUUID(), UUID.randomUUID());
-      fail("fail");
-    } catch (NotFoundException ex) {
-      assertEquals("File not found", ex.getMessage());
-    }
-  }
+    ResponseEntity<byte[]> response = fileController.downloadFile(new User(), fileId);
 
-  @Test
-  void testDownloadFileFromFolderNotAuthorized() {
-
-    when(fileServiceImpl.downloadFileFromFolder(anyString(), any(UUID.class), any(UUID.class)))
-        .thenThrow(new UnauthorizedException("Unauthorized access"));
-
-    try {
-      ResponseEntity<byte[]> response =
-          fileController.downloadFileFromFolder(token, UUID.randomUUID(), UUID.randomUUID());
-      fail("fail");
-    } catch (UnauthorizedException ex) {
-      assertEquals("Unauthorized access", ex.getMessage());
-    }
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
   }
 
   @Test

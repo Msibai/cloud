@@ -8,9 +8,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
 
 public interface FileService {
-  void uploadFileToFolder(User user, UUID folderId, FileDto file) throws FileAlreadyExistsException, NoSuchAlgorithmException;
+  void uploadFileToFolder(User user, UUID folderId, FileDto file)
+      throws FileAlreadyExistsException, NoSuchAlgorithmException;
 
-  FileDto downloadFileFromFolder(String token, UUID folderId, UUID fileId);
+  FileDto downloadFile(User user, UUID fileId);
 
   void deleteFileFromFolder(String token, UUID folderId, UUID fileId);
 
