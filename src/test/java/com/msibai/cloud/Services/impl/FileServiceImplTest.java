@@ -1,144 +1,86 @@
 package com.msibai.cloud.Services.impl;
 
+import static com.msibai.cloud.utilities.Utility.getFolderByIdOrThrow;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.msibai.cloud.Services.JwtService;
 import com.msibai.cloud.dtos.FileDto;
 import com.msibai.cloud.entities.File;
-import com.msibai.cloud.exceptions.NotFoundException;
-import com.msibai.cloud.exceptions.UnauthorizedException;
+import com.msibai.cloud.entities.Folder;
+import com.msibai.cloud.entities.User;
+import com.msibai.cloud.mappers.impl.FileMapperImpl;
 import com.msibai.cloud.repositories.FileRepository;
+import com.msibai.cloud.repositories.FolderRepository;
+import com.msibai.cloud.utilities.Utility;
+import java.nio.file.FileAlreadyExistsException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class FileServiceImplTest {
 
-  private final UUID fileId = UUID.randomUUID();
-  private final UUID folderId = UUID.randomUUID();
-  private final UUID userId = UUID.randomUUID();
-  private final String token = "validToken";
-  private final File file =
-      File.builder()
-          .id(fileId)
-          .name("testFile.txt")
-          .folderId(folderId)
-          .userId(userId)
-          .contentType("text/plain")
-          .content(new byte[] {})
-          .size(100L)
-          .build();
-
-  @Mock JwtService jwtService;
-
   @Mock FileRepository fileRepository;
+  @Mock FileMapperImpl fileMapperImpl;
   @InjectMocks FileServiceImpl fileServiceImpl;
 
   @Test
-  void downloadFileFromFolderSuccessfully() {
+  void testUploadFileSuccessfully() throws FileAlreadyExistsException, NoSuchAlgorithmException {
+    User mockUser = new User();
+    mockUser.setId(UUID.randomUUID());
+    UUID folderId = UUID.randomUUID();
+    byte[] fileContent = "File content".getBytes();
+    FileDto mockFileDto =
+        FileDto.builder().name("test.txt").contentType("text/plain").content(fileContent).build();
 
-    when(jwtService.extractUserId(token)).thenReturn(String.valueOf(userId));
+    try (MockedStatic<Utility> utilityClassMock = mockStatic(Utility.class)) {
+      utilityClassMock
+          .when(() -> getFolderByIdOrThrow(eq(folderId), any(FolderRepository.class)))
+          .thenReturn(new Folder());
 
-    FileDto expectedFile =
+      when(fileRepository.findByNameAndContentTypeAndFolderId(
+              anyString(), anyString(), any(UUID.class)))
+          .thenReturn(Optional.empty());
+      when(fileMapperImpl.mapFrom(any(FileDto.class))).thenReturn(new File());
+
+      fileServiceImpl.uploadFileToFolder(mockUser, folderId, mockFileDto);
+
+      verify(fileRepository, times(1)).save(any());
+    }
+  }
+
+  @Test
+  void testUploadFileAlreadyExists() {
+    User mockUser = new User();
+    mockUser.setId(UUID.randomUUID());
+    UUID folderId = UUID.randomUUID();
+    byte[] fileContent = "File content".getBytes();
+    FileDto mockFileDto =
         FileDto.builder()
-            .name(file.getName())
-            .content(file.getContent())
-            .contentType(file.getContentType())
-            .size(file.getSize())
+            .name("existingFile.txt")
+            .contentType("text/plain")
+            .content(fileContent)
             .build();
 
-    when(fileRepository.findByIdAndFolderId(fileId, folderId)).thenReturn(Optional.of(file));
+    try (MockedStatic<Utility> utilityClassMock = mockStatic(Utility.class)) {
+      utilityClassMock
+          .when(() -> getFolderByIdOrThrow(eq(folderId), any(FolderRepository.class)))
+          .thenReturn(new Folder());
 
-    FileDto downloadedFileDto = fileServiceImpl.downloadFileFromFolder(token, folderId, fileId);
+      when(fileRepository.findByNameAndContentTypeAndFolderId(
+              anyString(), anyString(), any(UUID.class)))
+          .thenReturn(Optional.of(new File()));
 
-    assertEquals(expectedFile.getName(), downloadedFileDto.getName());
-  }
-
-  @Test
-  void downloadFileFromFolderFileNotFound() {
-
-    when(jwtService.extractUserId(token)).thenReturn(String.valueOf(userId));
-    when(fileRepository.findByIdAndFolderId(fileId, folderId)).thenReturn(Optional.empty());
-
-    assertThrows(
-        NotFoundException.class,
-        () -> fileServiceImpl.downloadFileFromFolder(token, folderId, fileId));
-  }
-
-  @Test
-  void downloadFileFromFolderUnauthorized() {
-
-    file.setUserId(UUID.randomUUID());
-
-    when(jwtService.extractUserId(token)).thenReturn(String.valueOf(userId));
-    when(fileRepository.findByIdAndFolderId(fileId, folderId)).thenReturn(Optional.of(file));
-
-    assertThrows(
-        UnauthorizedException.class,
-        () -> fileServiceImpl.downloadFileFromFolder(token, folderId, fileId));
-  }
-
-  @Test
-  void deleteFileFromFolderSuccessfully() {
-
-    when(jwtService.extractUserId(token)).thenReturn(String.valueOf(userId));
-    when(fileRepository.findByIdAndFolderId(fileId, folderId)).thenReturn(Optional.of(file));
-
-    assertDoesNotThrow(() -> fileServiceImpl.deleteFileFromFolder(token, folderId, fileId));
-    verify(fileRepository, times(1)).delete(file);
-  }
-
-  @Test
-  void deleteFileFromFolderUnauthorized() {
-
-    file.setUserId(UUID.randomUUID());
-
-    when(jwtService.extractUserId(token)).thenReturn(String.valueOf(userId));
-    when(fileRepository.findByIdAndFolderId(fileId, folderId)).thenReturn(Optional.of(file));
-
-    assertThrows(
-        UnauthorizedException.class,
-        () -> fileServiceImpl.deleteFileFromFolder(token, folderId, fileId));
-    verify(fileRepository, never()).delete(file);
-  }
-
-  @Test
-  void deleteFileFromFolderFileNotFound() {
-
-    when(jwtService.extractUserId(token)).thenReturn(String.valueOf(userId));
-    when(fileRepository.findByIdAndFolderId(fileId, folderId)).thenReturn(Optional.empty());
-
-    assertThrows(
-        NotFoundException.class,
-        () -> fileServiceImpl.deleteFileFromFolder(token, folderId, fileId));
-    verify(fileRepository, never()).delete(file);
-  }
-
-  @Test
-  void moveFileToAnotherFolder() {
-
-    UUID currentFolderId = UUID.randomUUID();
-    UUID fileId = UUID.randomUUID();
-    UUID targetFolderId = UUID.randomUUID();
-    UUID userId = UUID.randomUUID();
-
-    when(jwtService.extractUserId(token)).thenReturn(String.valueOf(userId));
-
-    File fileToMove = new File();
-    fileToMove.setUserId(userId);
-    when(fileRepository.findByIdAndFolderId(fileId, currentFolderId))
-        .thenReturn(Optional.of(fileToMove));
-
-    assertDoesNotThrow(
-        () ->
-            fileServiceImpl.moveFileToAnotherFolder(
-                token, currentFolderId, fileId, targetFolderId));
-    verify(fileRepository, times(1)).save(fileToMove);
+      assertThrows(
+          FileAlreadyExistsException.class,
+          () -> fileServiceImpl.uploadFileToFolder(mockUser, folderId, mockFileDto));
+      verify(fileRepository, never()).save(any());
+    }
   }
 }

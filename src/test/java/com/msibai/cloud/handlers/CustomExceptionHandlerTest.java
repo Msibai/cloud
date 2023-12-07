@@ -8,6 +8,7 @@ import com.msibai.cloud.exceptions.*;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
+import java.nio.file.FileAlreadyExistsException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -19,6 +20,8 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 
 @ExtendWith(MockitoExtension.class)
 class CustomExceptionHandlerTest {
@@ -163,10 +166,80 @@ class CustomExceptionHandlerTest {
     FolderUpdateException exception = mock(FolderUpdateException.class);
     when(exception.getMessage()).thenReturn("Failed to rename folder");
 
-    ResponseEntity<String> response =
-            customExceptionHandler.handleFolderUpdateException(exception);
+    ResponseEntity<String> response = customExceptionHandler.handleFolderUpdateException(exception);
 
     assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
     assertEquals("Failed to rename folder", response.getBody());
+  }
+
+  @Test
+  void testHandleIncompleteFileDetailsException() {
+    IncompleteFileDetailsException exception = mock(IncompleteFileDetailsException.class);
+    when(exception.getMessage()).thenReturn("File details are incomplete.");
+
+    ResponseEntity<String> response =
+        customExceptionHandler.handleIncompleteFileDetailsException(exception);
+
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertEquals("File details are incomplete.", response.getBody());
+  }
+
+  @Test
+  void testHandleFileAlreadyExistsException() {
+    FileAlreadyExistsException exception = mock(FileAlreadyExistsException.class);
+    when(exception.getMessage())
+        .thenReturn("File with the same name and type already exists in the folder.");
+
+    ResponseEntity<String> response =
+        customExceptionHandler.handleFileAlreadyExistsException(exception);
+
+    assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+    assertEquals(
+        "File with the same name and type already exists in the folder.", response.getBody());
+  }
+
+  @Test
+  void testHandleEncryptionException() {
+    EncryptionException exception = mock(EncryptionException.class);
+    when(exception.getMessage()).thenReturn("Encryption failed!");
+
+    ResponseEntity<String> response = customExceptionHandler.handleEncryptionException(exception);
+
+    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+    assertEquals("Encryption failed!", response.getBody());
+  }
+
+  @Test
+  void testHandleFileUploadException() {
+    FileUploadException exception = mock(FileUploadException.class);
+    when(exception.getMessage()).thenReturn("Failed to upload file");
+
+    ResponseEntity<String> response = customExceptionHandler.handleFileUploadException(exception);
+
+    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+    assertEquals("Failed to upload file", response.getBody());
+  }
+
+  @Test
+  void testHandleMaxUploadSizeExceededException() {
+    MaxUploadSizeExceededException exception = mock(MaxUploadSizeExceededException.class);
+    when(exception.getMessage()).thenReturn("Maximum upload size exceeded.");
+
+    ResponseEntity<String> response =
+        customExceptionHandler.handleMaxUploadSizeExceededException(exception);
+
+    assertEquals(HttpStatus.PAYLOAD_TOO_LARGE, response.getStatusCode());
+    assertEquals("Maximum upload size exceeded.", response.getBody());
+  }
+
+  @Test
+  void testHandleMultipartException() {
+    MultipartException exception = mock(MultipartException.class);
+    when(exception.getMessage()).thenReturn("Multipart request handling error");
+
+    ResponseEntity<String> response = customExceptionHandler.handleMultipartException(exception);
+
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertEquals("Multipart request handling error", response.getBody());
   }
 }

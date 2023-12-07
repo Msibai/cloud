@@ -2,27 +2,30 @@ package com.msibai.cloud.controllers;
 
 import com.msibai.cloud.Services.impl.FileServiceImpl;
 import com.msibai.cloud.dtos.FileDto;
+import com.msibai.cloud.entities.User;
 import com.msibai.cloud.exceptions.NotFoundException;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/api/v1/")
+@RequestMapping("/api/v1/root")
 @RequiredArgsConstructor
 public class FileController {
 
   private final FileServiceImpl fileServiceImpl;
 
-  @PostMapping("/folders/{folderId}/upload")
-  public ResponseEntity<String> uploadFileToFolder(
-      @RequestHeader("Authorization") String token,
-      @PathVariable UUID folderId,
+  @PostMapping("/{folder-id}/upload")
+  public ResponseEntity<String> uploadFile(
+      @AuthenticationPrincipal User user,
+      @PathVariable("folder-id") UUID folderId,
       @RequestParam("file") MultipartFile file)
-      throws IOException {
+      throws IOException, NoSuchAlgorithmException {
 
     if (file == null) {
       return ResponseEntity.badRequest().body("File is missing");
@@ -40,7 +43,7 @@ public class FileController {
             .size(file.getSize())
             .build();
 
-    fileServiceImpl.uploadFileToFolder(token, folderId, uploadedFile);
+    fileServiceImpl.uploadFileToFolder(user, folderId, uploadedFile);
 
     return ResponseEntity.ok(file.getOriginalFilename() + " uploaded successfully!");
   }

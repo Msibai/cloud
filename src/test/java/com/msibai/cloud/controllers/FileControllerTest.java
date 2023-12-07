@@ -7,8 +7,11 @@ import static org.mockito.Mockito.*;
 
 import com.msibai.cloud.Services.impl.FileServiceImpl;
 import com.msibai.cloud.dtos.FileDto;
+import com.msibai.cloud.entities.User;
 import com.msibai.cloud.exceptions.NotFoundException;
 import com.msibai.cloud.exceptions.UnauthorizedException;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,30 +30,40 @@ class FileControllerTest {
   @InjectMocks private FileController fileController;
 
   @Test
-  void testUploadFileToFolderSuccessfully() throws java.io.IOException {
+  void testUploadFileToFolderSuccessfully() throws IOException, NoSuchAlgorithmException {
+    User mockUser = new User();
+    mockUser.setId(UUID.randomUUID());
+    UUID folderId = UUID.randomUUID();
+    MockMultipartFile mockFile =
+        new MockMultipartFile("file", "test.txt", "text/plain", "Hello, World!".getBytes());
 
-    byte[] fileContent = "Test file content".getBytes();
-    MockMultipartFile multipartFile =
-        new MockMultipartFile("file", "test.txt", "text/plain", fileContent);
+    ResponseEntity<String> response = fileController.uploadFile(mockUser, folderId, mockFile);
 
-    doNothing().when(fileServiceImpl).uploadFileToFolder(anyString(), any(UUID.class), any());
-
-    ResponseEntity<String> response =
-        fileController.uploadFileToFolder(token, UUID.randomUUID(), multipartFile);
-
-    verify(fileServiceImpl, times(1))
-        .uploadFileToFolder(eq(token), any(UUID.class), any(FileDto.class));
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals("test.txt uploaded successfully!", response.getBody());
+    verify(fileServiceImpl, times(1)).uploadFileToFolder(eq(mockUser), eq(folderId), any());
   }
 
   @Test
-  void testUploadFileToFolderNullFile() throws java.io.IOException {
+  void testUploadFileToFolderNullFile() throws IOException, NoSuchAlgorithmException {
+    User mockUser = new User();
+    UUID folderId = UUID.randomUUID();
 
-    ResponseEntity<String> response =
-        fileController.uploadFileToFolder(token, UUID.randomUUID(), null);
+    fileController.uploadFile(mockUser, folderId, null);
 
-    verifyNoInteractions(fileServiceImpl);
-    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    verify(fileServiceImpl, never()).uploadFileToFolder(any(), any(), any());
+  }
+
+  @Test
+  public void testUploadFileSizeExceedLimit() throws IOException, NoSuchAlgorithmException {
+    User mockUser = new User();
+    UUID folderId = UUID.randomUUID();
+    MockMultipartFile mockFile =
+        new MockMultipartFile("file", "largeFile.txt", "text/plain", new byte[2097153000]);
+
+    fileController.uploadFile(mockUser, folderId, mockFile);
+
+    verify(fileServiceImpl, never()).uploadFileToFolder(any(), any(), any());
   }
 
   @Test

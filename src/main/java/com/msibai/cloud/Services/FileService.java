@@ -1,10 +1,14 @@
 package com.msibai.cloud.Services;
 
 import com.msibai.cloud.dtos.FileDto;
+import com.msibai.cloud.entities.User;
+
+import java.nio.file.FileAlreadyExistsException;
+import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
 
 public interface FileService {
-  void uploadFileToFolder(String token, UUID folderId, FileDto file);
+  void uploadFileToFolder(User user, UUID folderId, FileDto file) throws FileAlreadyExistsException, NoSuchAlgorithmException;
 
   FileDto downloadFileFromFolder(String token, UUID folderId, UUID fileId);
 

@@ -4,6 +4,7 @@ import com.msibai.cloud.exceptions.*;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
+import java.nio.file.FileAlreadyExistsException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.*;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -11,6 +12,8 @@ import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 
 @RestControllerAdvice
 public class CustomExceptionHandler {
@@ -96,8 +99,39 @@ public class CustomExceptionHandler {
   }
 
   @ExceptionHandler(FolderUpdateException.class)
-  public ResponseEntity<String> handleFolderUpdateException(
-          FolderUpdateException ex) {
+  public ResponseEntity<String> handleFolderUpdateException(FolderUpdateException ex) {
     return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+  }
+
+  @ExceptionHandler(IncompleteFileDetailsException.class)
+  public ResponseEntity<String> handleIncompleteFileDetailsException(
+      IncompleteFileDetailsException ex) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+  }
+
+  @ExceptionHandler(FileAlreadyExistsException.class)
+  public ResponseEntity<String> handleFileAlreadyExistsException(FileAlreadyExistsException ex) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+  }
+
+  @ExceptionHandler(EncryptionException.class)
+  public ResponseEntity<String> handleEncryptionException(EncryptionException ex) {
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+  }
+
+  @ExceptionHandler(FileUploadException.class)
+  public ResponseEntity<String> handleFileUploadException(FileUploadException ex) {
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+  }
+
+  @ExceptionHandler(MaxUploadSizeExceededException.class)
+  public ResponseEntity<String> handleMaxUploadSizeExceededException(
+      MaxUploadSizeExceededException ex) {
+    return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(ex.getMessage());
+  }
+
+  @ExceptionHandler(MultipartException.class)
+  public ResponseEntity<String> handleMultipartException(MultipartException ex) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
   }
 }

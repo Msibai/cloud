@@ -27,5 +27,9 @@ public class File {
 
   @NonNull private UUID userId;
 
-  private UUID folderId;
+  @NonNull private UUID folderId;
+
+  @NonNull private String encryptionKey;
+
+  @NonNull private String iv;
 }
