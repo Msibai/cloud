@@ -22,7 +22,6 @@ import java.util.Optional;
 import java.util.UUID;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -148,9 +147,48 @@ class FileServiceImplTest {
 
     when(fileRepository.findById(fileId)).thenReturn(Optional.empty());
 
-    assertThrows(
-        NotFoundException.class, () -> fileServiceImpl.downloadFile(mockUser, fileId));
+    assertThrows(NotFoundException.class, () -> fileServiceImpl.downloadFile(mockUser, fileId));
     verify(fileRepository, times(1)).findById(fileId);
     verifyNoInteractions(fileMapperImpl);
+  }
+
+  @Test
+  void testDeleteFileSuccessfully() {
+
+    File file = new File();
+    file.setId(fileId);
+    file.setUserId(userId);
+
+    when(fileRepository.findById(fileId)).thenReturn(Optional.of(file));
+
+    fileServiceImpl.deleteFile(mockUser, fileId);
+
+    verify(fileRepository, times(1)).findById(fileId);
+    verify(fileRepository, times(1)).delete(file);
+  }
+
+  @Test
+  void testDeleteFileNotFound() {
+    when(fileRepository.findById(fileId)).thenReturn(Optional.empty());
+
+    assertThrows(NotFoundException.class, () -> fileServiceImpl.deleteFile(mockUser, fileId));
+
+    verify(fileRepository, times(1)).findById(fileId);
+    verifyNoMoreInteractions(fileRepository);
+  }
+
+  @Test
+  void testDeleteFileUnauthorizedUser() {
+
+    File anotherUserFile = new File();
+    anotherUserFile.setId(fileId);
+    anotherUserFile.setUserId(UUID.randomUUID());
+
+    when(fileRepository.findById(fileId)).thenReturn(Optional.of(anotherUserFile));
+
+    assertThrows(UnauthorizedException.class, () -> fileServiceImpl.deleteFile(mockUser, fileId));
+
+    verify(fileRepository, times(1)).findById(fileId);
+    verifyNoMoreInteractions(fileRepository);
   }
 }

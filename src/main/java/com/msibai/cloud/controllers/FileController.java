@@ -68,13 +68,11 @@ public class FileController {
     return new ResponseEntity<>(fileData, headers, HttpStatus.OK);
   }
 
-  @DeleteMapping("/folders/{folderId}/files/{fileId}/delete")
-  public ResponseEntity<String> deleteFileFromFolder(
-      @RequestHeader("Authorization") String token,
-      @PathVariable UUID folderId,
-      @PathVariable UUID fileId) {
+  @DeleteMapping("/{folder-id}/{file-id}/delete")
+  public ResponseEntity<String> deleteFile(
+      @AuthenticationPrincipal User user, @PathVariable("file-id") UUID fileId) {
 
-    fileServiceImpl.deleteFileFromFolder(token, folderId, fileId);
+    fileServiceImpl.deleteFile(user, fileId);
 
     return ResponseEntity.ok("File deleted successfully");
   }
