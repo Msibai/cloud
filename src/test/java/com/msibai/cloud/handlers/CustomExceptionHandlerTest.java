@@ -242,4 +242,16 @@ class CustomExceptionHandlerTest {
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     assertEquals("Multipart request handling error", response.getBody());
   }
+
+  @Test
+  void testHandleInvalidPaginationParameterException() {
+    InvalidPaginationParameterException exception = mock(InvalidPaginationParameterException.class);
+    when(exception.getMessage()).thenReturn("Invalid pagination parameters.");
+
+    ResponseEntity<String> response =
+        customExceptionHandler.handleInvalidPaginationParameterException(exception);
+
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertEquals("Invalid pagination parameters.", response.getBody());
+  }
 }

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.msibai.cloud.dtos.FileDto;
+import com.msibai.cloud.dtos.SlimFileDto;
 import com.msibai.cloud.entities.File;
 import com.msibai.cloud.entities.Folder;
 import com.msibai.cloud.entities.User;
@@ -17,9 +18,7 @@ import com.msibai.cloud.utilities.FileEncryption;
 import com.msibai.cloud.utilities.Utility;
 import java.nio.file.FileAlreadyExistsException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +28,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 class FileServiceImplTest {
@@ -97,6 +100,26 @@ class FileServiceImplTest {
           () -> fileServiceImpl.uploadFileToFolder(mockUser, folderId, mockFileDto));
       verify(fileRepository, never()).save(any());
     }
+  }
+
+  @Test
+  void testFindByFolderIdReturnsPageOfSlimFileDto() {
+    Pageable validPageable = PageRequest.of(0, 10);
+
+    File testFile = new File();
+    testFile.setUserId(userId);
+
+    List<File> files = Arrays.asList(testFile, testFile);
+    Page<File> filePage = new PageImpl<>(files, validPageable, files.size());
+
+    when(fileRepository.findByFolderId(eq(folderId), eq(validPageable))).thenReturn(filePage);
+
+    List<SlimFileDto> slimFileDtoList = Arrays.asList(new SlimFileDto(), new SlimFileDto());
+    when(fileMapperImpl.mapToSlim(any())).thenReturn(slimFileDtoList.get(0));
+
+    Page<SlimFileDto> result = fileServiceImpl.findByFolderId(mockUser, folderId, validPageable);
+
+    assertEquals(slimFileDtoList.size(), result.getContent().size());
   }
 
   @Test

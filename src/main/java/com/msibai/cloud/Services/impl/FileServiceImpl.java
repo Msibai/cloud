@@ -5,6 +5,7 @@ import static com.msibai.cloud.utilities.Utility.*;
 
 import com.msibai.cloud.Services.FileService;
 import com.msibai.cloud.dtos.FileDto;
+import com.msibai.cloud.dtos.SlimFileDto;
 import com.msibai.cloud.entities.File;
 import com.msibai.cloud.entities.Folder;
 import com.msibai.cloud.entities.User;
@@ -22,6 +23,8 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -64,6 +67,15 @@ public class FileServiceImpl implements FileService {
     } catch (FileUploadException ex) {
       throw new FileUploadException("Failed to upload file: " + ex.getMessage());
     }
+  }
+
+  @Override
+  public Page<SlimFileDto> findByFolderId(User user, UUID folderId, Pageable pageable) {
+
+    Page<File> fileList = fileRepository.findByFolderId(folderId, pageable);
+    fileList.forEach(file -> authorizeUserAccess(file, user.getId(), File::getUserId));
+
+    return fileList.map(fileMapperImpl::mapToSlim);
   }
 
   @Override

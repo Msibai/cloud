@@ -6,17 +6,21 @@ import static org.mockito.Mockito.*;
 
 import com.msibai.cloud.Services.impl.FileServiceImpl;
 import com.msibai.cloud.dtos.FileDto;
+import com.msibai.cloud.dtos.SlimFileDto;
 import com.msibai.cloud.entities.User;
+import com.msibai.cloud.exceptions.InvalidPaginationParameterException;
+import com.msibai.cloud.utilities.PagedResponse;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
@@ -69,6 +73,29 @@ class FileControllerTest {
     fileController.uploadFile(mockUser, folderId, mockFile);
 
     verify(fileServiceImpl, never()).uploadFileToFolder(any(), any(), any());
+  }
+
+  @Test
+  void testFindFilesInFolderReturnsExpectedFiles() {
+    List<SlimFileDto> slimFileDtoList = Arrays.asList(new SlimFileDto(), new SlimFileDto());
+    Page<SlimFileDto> mockedPage = new PageImpl<>(slimFileDtoList);
+
+    when(fileServiceImpl.findByFolderId(any(), any(), any())).thenReturn(mockedPage);
+
+    ResponseEntity<PagedResponse<SlimFileDto>> responseEntity =
+        fileController.findFilesInFolder(mock(User.class), folderId, 0, 10);
+
+    assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    assertEquals(
+        slimFileDtoList.size(),
+        Objects.requireNonNull(responseEntity.getBody()).getContent().size());
+  }
+
+  @Test
+  void testFindFilesInFolderWithInvalidPagination() {
+    assertThrows(
+        InvalidPaginationParameterException.class,
+        () -> fileController.findFilesInFolder(mock(User.class), folderId, -1, 10));
   }
 
   @Test

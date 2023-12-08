@@ -134,4 +134,10 @@ public class CustomExceptionHandler {
   public ResponseEntity<String> handleMultipartException(MultipartException ex) {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
   }
+
+  @ExceptionHandler(InvalidPaginationParameterException.class)
+  public ResponseEntity<String> handleInvalidPaginationParameterException(
+      InvalidPaginationParameterException ex) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+  }
 }

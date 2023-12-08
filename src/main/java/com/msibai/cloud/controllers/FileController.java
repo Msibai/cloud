@@ -2,14 +2,17 @@ package com.msibai.cloud.controllers;
 
 import com.msibai.cloud.Services.impl.FileServiceImpl;
 import com.msibai.cloud.dtos.FileDto;
+import com.msibai.cloud.dtos.SlimFileDto;
 import com.msibai.cloud.entities.User;
-import com.msibai.cloud.exceptions.NotFoundException;
+import com.msibai.cloud.exceptions.InvalidPaginationParameterException;
+import com.msibai.cloud.utilities.PagedResponse;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
-
-import com.msibai.cloud.exceptions.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -48,6 +51,34 @@ public class FileController {
     fileServiceImpl.uploadFileToFolder(user, folderId, uploadedFile);
 
     return ResponseEntity.ok(file.getOriginalFilename() + " uploaded successfully!");
+  }
+
+  @GetMapping("{folder-id}/files")
+  public ResponseEntity<PagedResponse<SlimFileDto>> findFilesInFolder(
+      @AuthenticationPrincipal User user,
+      @PathVariable("folder-id") UUID folderId,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "10") int size) {
+
+    if (page < 0 || size <= 0) {
+      throw new InvalidPaginationParameterException("Invalid pagination parameters.");
+    }
+
+    Pageable pageable = PageRequest.of(page, size);
+    Page<SlimFileDto> filesPage = fileServiceImpl.findByFolderId(user, folderId, pageable);
+
+    PagedResponse<SlimFileDto> response =
+        new PagedResponse<>(
+            filesPage.getContent(),
+            filesPage.getNumber(),
+            filesPage.getSize(),
+            filesPage.getTotalElements(),
+            filesPage.getTotalPages());
+
+    HttpHeaders headers = new HttpHeaders();
+    headers.add("X-Total-Count", String.valueOf(filesPage.getTotalElements()));
+
+    return ResponseEntity.ok().headers(headers).body(response);
   }
 
   @GetMapping("/{folder-id}/{file-id}/download")
