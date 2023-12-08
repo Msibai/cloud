@@ -4,7 +4,6 @@ import static com.msibai.cloud.utilities.FileEncryption.*;
 import static com.msibai.cloud.utilities.Utility.*;
 
 import com.msibai.cloud.Services.FileService;
-import com.msibai.cloud.Services.JwtService;
 import com.msibai.cloud.dtos.FileDto;
 import com.msibai.cloud.entities.File;
 import com.msibai.cloud.entities.Folder;
@@ -29,7 +28,6 @@ import org.springframework.stereotype.Service;
 @AllArgsConstructor
 public class FileServiceImpl implements FileService {
 
-  private final JwtService jwtService;
   private final FileRepository fileRepository;
   private final FileMapperImpl fileMapperImpl;
   private final FolderRepository folderRepository;
@@ -112,16 +110,17 @@ public class FileServiceImpl implements FileService {
 
   @Override
   public void moveFileToAnotherFolder(
-      String token, UUID currentFolderId, UUID fileId, UUID targetFolderId) {
+      User user, UUID currentFolderId, UUID fileId, UUID targetFolderId) {
 
-    tokenIsNotNullOrEmpty(token);
-    UUID userId = getUserIdFromToken(token, jwtService);
     File fileToMove =
         fileRepository
-            .findByIdAndFolderId(fileId, currentFolderId)
-            .orElseThrow(() -> new NotFoundException("File not found in the current folder"));
+            .findById(fileId)
+            .orElseThrow(() -> new NotFoundException("File not found in the folder"));
 
-    authorizeUserAccess(fileToMove, userId, File::getUserId);
+    authorizeUserAccess(fileToMove, user.getId(), File::getUserId);
+
+    Folder targetFolder = getFolderByIdOrThrow(targetFolderId, folderRepository);
+    authorizeUserAccess(targetFolder, user.getId(), Folder::getUserId);
 
     fileToMove.setFolderId(targetFolderId);
     fileRepository.save(fileToMove);

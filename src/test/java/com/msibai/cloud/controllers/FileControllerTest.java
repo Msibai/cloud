@@ -24,19 +24,17 @@ import org.springframework.mock.web.MockMultipartFile;
 @ExtendWith(MockitoExtension.class)
 class FileControllerTest {
 
-  private final String token = "validToken";
   @Mock private FileServiceImpl fileServiceImpl;
   @InjectMocks private FileController fileController;
 
   private User mockUser;
-  private UUID userId;
   private UUID folderId;
   private UUID fileId;
 
   @BeforeEach
   void setUp() {
     mockUser = new User();
-    userId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
     mockUser.setId(userId);
     folderId = UUID.randomUUID();
     fileId = UUID.randomUUID();
@@ -115,19 +113,18 @@ class FileControllerTest {
   void testMoveFileToAnotherFolder() {
 
     UUID currentFolderId = UUID.randomUUID();
-    UUID fileId = UUID.randomUUID();
     UUID targetFolderId = UUID.randomUUID();
     doNothing()
         .when(fileServiceImpl)
-        .moveFileToAnotherFolder(token, currentFolderId, fileId, targetFolderId);
+        .moveFileToAnotherFolder(mockUser, currentFolderId, fileId, targetFolderId);
 
     ResponseEntity<String> response =
-        fileController.moveFileToAnotherFolder(token, currentFolderId, fileId, targetFolderId);
+        fileController.moveFileToAnotherFolder(mockUser, currentFolderId, fileId, targetFolderId);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertEquals("File moved successfully to the target folder.", response.getBody());
 
     verify(fileServiceImpl, times(1))
-        .moveFileToAnotherFolder(token, currentFolderId, fileId, targetFolderId);
+        .moveFileToAnotherFolder(mockUser, currentFolderId, fileId, targetFolderId);
   }
 }

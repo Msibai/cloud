@@ -191,4 +191,71 @@ class FileServiceImplTest {
     verify(fileRepository, times(1)).findById(fileId);
     verifyNoMoreInteractions(fileRepository);
   }
+
+  @Test
+  void testMoveFileToAnotherFolderSuccessfully() {
+
+    UUID currentFolderId = UUID.randomUUID();
+    UUID targetFolderId = UUID.randomUUID();
+
+    File fileToMove = new File();
+    fileToMove.setId(fileId);
+    fileToMove.setUserId(userId);
+    fileToMove.setFolderId(currentFolderId);
+
+    try (MockedStatic<Utility> utilityClassMock = mockStatic(Utility.class)) {
+      utilityClassMock
+          .when(() -> getFolderByIdOrThrow(eq(folderId), any(FolderRepository.class)))
+          .thenReturn(new Folder());
+
+      when(fileRepository.findById(fileId)).thenReturn(Optional.of(fileToMove));
+      when(fileRepository.save(any(File.class))).thenReturn(fileToMove);
+
+      fileServiceImpl.moveFileToAnotherFolder(mockUser, currentFolderId, fileId, targetFolderId);
+
+      assertEquals(targetFolderId, fileToMove.getFolderId());
+      verify(fileRepository, times(1)).findById(fileId);
+      verify(fileRepository, times(1)).save(fileToMove);
+    }
+  }
+
+  @Test
+  void testMoveFileToAnotherFolderFileNotFound() {
+
+    UUID currentFolderId = UUID.randomUUID();
+    UUID targetFolderId = UUID.randomUUID();
+
+    when(fileRepository.findById(fileId)).thenReturn(Optional.empty());
+
+    assertThrows(
+        NotFoundException.class,
+        () ->
+            fileServiceImpl.moveFileToAnotherFolder(
+                mockUser, currentFolderId, fileId, targetFolderId));
+
+    verify(fileRepository, times(1)).findById(fileId);
+    verify(fileRepository, never()).save(any(File.class));
+  }
+
+  @Test
+  void testMoveFileToAnotherFolderUnauthorized() {
+
+    UUID currentFolderId = UUID.randomUUID();
+    UUID targetFolderId = UUID.randomUUID();
+
+    File fileToMove = new File();
+    fileToMove.setId(fileId);
+    fileToMove.setUserId(UUID.randomUUID());
+
+    when(fileRepository.findById(fileId)).thenReturn(Optional.of(fileToMove));
+
+    assertThrows(
+        UnauthorizedException.class,
+        () ->
+            fileServiceImpl.moveFileToAnotherFolder(
+                mockUser, currentFolderId, fileId, targetFolderId));
+
+    verify(fileRepository, times(1)).findById(fileId);
+    verify(fileRepository, never()).save(any(File.class));
+  }
 }

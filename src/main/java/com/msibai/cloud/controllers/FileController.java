@@ -7,6 +7,8 @@ import com.msibai.cloud.exceptions.NotFoundException;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
+
+import com.msibai.cloud.exceptions.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -77,21 +79,14 @@ public class FileController {
     return ResponseEntity.ok("File deleted successfully");
   }
 
-  @PutMapping("/folders/{currentFolderId}/files/{fileId}/move")
+  @PutMapping("/{current-folder-id}/{file-id}/move")
   public ResponseEntity<String> moveFileToAnotherFolder(
-      @RequestHeader("Authorization") String token,
-      @PathVariable UUID currentFolderId,
-      @PathVariable UUID fileId,
+      @AuthenticationPrincipal User user,
+      @PathVariable("current-folder-id") UUID currentFolderId,
+      @PathVariable("file-id") UUID fileId,
       @RequestParam UUID targetFolderId) {
 
-    try {
-      fileServiceImpl.moveFileToAnotherFolder(token, currentFolderId, fileId, targetFolderId);
-      return ResponseEntity.ok("File moved successfully to the target folder.");
-    } catch (NotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-    } catch (Exception e) {
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .body("An error occurred while moving the file.");
-    }
+    fileServiceImpl.moveFileToAnotherFolder(user, currentFolderId, fileId, targetFolderId);
+    return ResponseEntity.ok("File moved successfully to the target folder.");
   }
 }

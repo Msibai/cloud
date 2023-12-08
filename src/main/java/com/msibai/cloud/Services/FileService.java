@@ -14,6 +14,5 @@ public interface FileService {
 
   void deleteFile(User user, UUID fileId);
 
-  void moveFileToAnotherFolder(
-      String token, UUID currentFolderId, UUID fileId, UUID targetFolderId);
+  void moveFileToAnotherFolder(User user, UUID currentFolderId, UUID fileId, UUID targetFolderId);
 }
