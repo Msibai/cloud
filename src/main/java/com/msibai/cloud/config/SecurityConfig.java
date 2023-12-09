@@ -1,6 +1,6 @@
 package com.msibai.cloud.config;
 
-import com.msibai.cloud.Services.UserService;
+import com.msibai.cloud.services.UserService;
 import com.msibai.cloud.filters.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;

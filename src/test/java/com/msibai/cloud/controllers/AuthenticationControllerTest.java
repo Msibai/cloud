@@ -3,7 +3,7 @@ package com.msibai.cloud.controllers;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
-import com.msibai.cloud.Services.AuthenticationService;
+import com.msibai.cloud.services.AuthenticationService;
 import com.msibai.cloud.dtos.JwtAuthenticationResponseDto;
 import com.msibai.cloud.dtos.SignUpDto;
 import org.junit.jupiter.api.Test;

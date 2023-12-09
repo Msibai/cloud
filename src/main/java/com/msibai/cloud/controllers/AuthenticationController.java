@@ -1,6 +1,6 @@
 package com.msibai.cloud.controllers;
 
-import com.msibai.cloud.Services.AuthenticationService;
+import com.msibai.cloud.services.AuthenticationService;
 import com.msibai.cloud.dtos.JwtAuthenticationResponseDto;
 import com.msibai.cloud.dtos.SignInDto;
 import com.msibai.cloud.dtos.SignUpDto;

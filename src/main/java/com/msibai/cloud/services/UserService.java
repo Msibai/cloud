@@ -1,4 +1,4 @@
-package com.msibai.cloud.Services;
+package com.msibai.cloud.services;
 
 import com.msibai.cloud.entities.User;
 import com.msibai.cloud.repositories.UserRepository;

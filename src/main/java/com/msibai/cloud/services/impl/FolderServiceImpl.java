@@ -1,8 +1,8 @@
-package com.msibai.cloud.Services.impl;
+package com.msibai.cloud.services.impl;
 
 import static com.msibai.cloud.utilities.Utility.*;
 
-import com.msibai.cloud.Services.FolderService;
+import com.msibai.cloud.services.FolderService;
 import com.msibai.cloud.dtos.FolderDto;
 import com.msibai.cloud.entities.Folder;
 import com.msibai.cloud.entities.User;

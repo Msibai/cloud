@@ -1,6 +1,6 @@
-package com.msibai.cloud.Services;
+package com.msibai.cloud.services;
 
-import com.msibai.cloud.Services.impl.FolderServiceImpl;
+import com.msibai.cloud.services.impl.FolderServiceImpl;
 import com.msibai.cloud.dtos.JwtAuthenticationResponseDto;
 import com.msibai.cloud.dtos.SignInDto;
 import com.msibai.cloud.dtos.SignUpDto;

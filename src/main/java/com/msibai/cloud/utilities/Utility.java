@@ -1,6 +1,6 @@
 package com.msibai.cloud.utilities;
 
-import com.msibai.cloud.Services.JwtService;
+import com.msibai.cloud.services.JwtService;
 import com.msibai.cloud.entities.Folder;
 import com.msibai.cloud.exceptions.NotFoundException;
 import com.msibai.cloud.exceptions.UnauthorizedException;
