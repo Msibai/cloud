@@ -2,19 +2,25 @@ package com.msibai.cloud.controllers;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 import com.msibai.cloud.Services.impl.FileServiceImpl;
 import com.msibai.cloud.dtos.FileDto;
-import com.msibai.cloud.exceptions.NotFoundException;
-import com.msibai.cloud.exceptions.UnauthorizedException;
-import java.util.UUID;
+import com.msibai.cloud.dtos.SlimFileDto;
+import com.msibai.cloud.entities.User;
+import com.msibai.cloud.exceptions.InvalidPaginationParameterException;
+import com.msibai.cloud.utilities.PagedResponse;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.util.*;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
@@ -22,120 +28,130 @@ import org.springframework.mock.web.MockMultipartFile;
 @ExtendWith(MockitoExtension.class)
 class FileControllerTest {
 
-  private final String token = "validToken";
   @Mock private FileServiceImpl fileServiceImpl;
   @InjectMocks private FileController fileController;
 
+  private User mockUser;
+  private UUID folderId;
+  private UUID fileId;
+
+  @BeforeEach
+  void setUp() {
+    mockUser = new User();
+    UUID userId = UUID.randomUUID();
+    mockUser.setId(userId);
+    folderId = UUID.randomUUID();
+    fileId = UUID.randomUUID();
+  }
+
   @Test
-  void testUploadFileToFolderSuccessfully() throws java.io.IOException {
+  void testUploadFileToFolderSuccessfully() throws IOException, NoSuchAlgorithmException {
+    MockMultipartFile mockFile =
+        new MockMultipartFile("file", "test.txt", "text/plain", "Hello, World!".getBytes());
 
-    byte[] fileContent = "Test file content".getBytes();
-    MockMultipartFile multipartFile =
-        new MockMultipartFile("file", "test.txt", "text/plain", fileContent);
+    ResponseEntity<String> response = fileController.uploadFile(mockUser, folderId, mockFile);
 
-    doNothing().when(fileServiceImpl).uploadFileToFolder(anyString(), any(UUID.class), any());
-
-    ResponseEntity<String> response =
-        fileController.uploadFileToFolder(token, UUID.randomUUID(), multipartFile);
-
-    verify(fileServiceImpl, times(1))
-        .uploadFileToFolder(eq(token), any(UUID.class), any(FileDto.class));
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals("test.txt uploaded successfully!", response.getBody());
+    verify(fileServiceImpl, times(1)).uploadFileToFolder(eq(mockUser), eq(folderId), any());
   }
 
   @Test
-  void testUploadFileToFolderNullFile() throws java.io.IOException {
+  void testUploadFileToFolderNullFile() throws IOException, NoSuchAlgorithmException {
 
-    ResponseEntity<String> response =
-        fileController.uploadFileToFolder(token, UUID.randomUUID(), null);
+    fileController.uploadFile(mockUser, folderId, null);
 
-    verifyNoInteractions(fileServiceImpl);
-    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    verify(fileServiceImpl, never()).uploadFileToFolder(any(), any(), any());
   }
 
   @Test
-  void testDownloadFileFromFolderSuccessfully() {
+  public void testUploadFileSizeExceedLimit() throws IOException, NoSuchAlgorithmException {
 
-    byte[] fileContent = "Test file content".getBytes();
-    FileDto fileDto = new FileDto();
-    fileDto.setContent(fileContent);
-    fileDto.setName("test.txt");
-    fileDto.setContentType("text/plain");
+    MockMultipartFile mockFile =
+        new MockMultipartFile("file", "largeFile.txt", "text/plain", new byte[2097153000]);
 
-    when(fileServiceImpl.downloadFileFromFolder(anyString(), any(UUID.class), any(UUID.class)))
-        .thenReturn(fileDto);
+    fileController.uploadFile(mockUser, folderId, mockFile);
 
-    ResponseEntity<byte[]> response =
-        fileController.downloadFileFromFolder(token, UUID.randomUUID(), UUID.randomUUID());
+    verify(fileServiceImpl, never()).uploadFileToFolder(any(), any(), any());
+  }
 
-    verify(fileServiceImpl, times(1))
-        .downloadFileFromFolder(eq(token), any(UUID.class), any(UUID.class));
+  @Test
+  void testFindFilesInFolderReturnsExpectedFiles() {
+    List<SlimFileDto> slimFileDtoList = Arrays.asList(new SlimFileDto(), new SlimFileDto());
+    Page<SlimFileDto> mockedPage = new PageImpl<>(slimFileDtoList);
+
+    when(fileServiceImpl.findByFolderId(any(), any(), any())).thenReturn(mockedPage);
+
+    ResponseEntity<PagedResponse<SlimFileDto>> responseEntity =
+        fileController.findFilesInFolder(mock(User.class), folderId, 0, 10);
+
+    assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    assertEquals(
+        slimFileDtoList.size(),
+        Objects.requireNonNull(responseEntity.getBody()).getContent().size());
+  }
+
+  @Test
+  void testFindFilesInFolderWithInvalidPagination() {
+    assertThrows(
+        InvalidPaginationParameterException.class,
+        () -> fileController.findFilesInFolder(mock(User.class), folderId, -1, 10));
+  }
+
+  @Test
+  public void testDownloadFileSuccessfully() {
+    byte[] fileContent = "Your file content".getBytes();
+    String fileName = "test-file.txt";
+    String contentType = "text/plain";
+
+    FileDto mockFile = new FileDto();
+    mockFile.setContent(fileContent);
+    mockFile.setName(fileName);
+    mockFile.setContentType(contentType);
+    when(fileServiceImpl.downloadFile(any(User.class), eq(fileId))).thenReturn(mockFile);
+
+    ResponseEntity<byte[]> response = fileController.downloadFile(new User(), fileId);
+
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertNotNull(response.getBody());
-    assertEquals(fileContent, response.getBody());
-    assertNotNull(response.getHeaders().getContentType());
-    assertEquals(fileDto.getName(), response.getHeaders().getContentDisposition().getFilename());
+    assertEquals(fileContent.length, Objects.requireNonNull(response.getBody()).length);
   }
 
   @Test
-  void testDownloadFileFromFolderNotFound() {
+  public void testDownloadFileFailureFileNotFound() {
 
-    when(fileServiceImpl.downloadFileFromFolder(anyString(), any(UUID.class), any(UUID.class)))
-        .thenThrow(new NotFoundException("File not found"));
+    when(fileServiceImpl.downloadFile(any(User.class), eq(fileId))).thenReturn(null);
 
-    try {
-      ResponseEntity<byte[]> response =
-          fileController.downloadFileFromFolder(token, UUID.randomUUID(), UUID.randomUUID());
-      fail("fail");
-    } catch (NotFoundException ex) {
-      assertEquals("File not found", ex.getMessage());
-    }
+    ResponseEntity<byte[]> response = fileController.downloadFile(new User(), fileId);
+
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
   }
 
   @Test
-  void testDownloadFileFromFolderNotAuthorized() {
+  void testDeleteFile() {
+    doNothing().when(fileServiceImpl).deleteFile(mockUser, fileId);
 
-    when(fileServiceImpl.downloadFileFromFolder(anyString(), any(UUID.class), any(UUID.class)))
-        .thenThrow(new UnauthorizedException("Unauthorized access"));
-
-    try {
-      ResponseEntity<byte[]> response =
-          fileController.downloadFileFromFolder(token, UUID.randomUUID(), UUID.randomUUID());
-      fail("fail");
-    } catch (UnauthorizedException ex) {
-      assertEquals("Unauthorized access", ex.getMessage());
-    }
-  }
-
-  @Test
-  void testDeleteFileFromFolder() {
-    UUID folderId = UUID.randomUUID();
-    UUID fileId = UUID.randomUUID();
-    doNothing().when(fileServiceImpl).deleteFileFromFolder(token, folderId, fileId);
-
-    ResponseEntity<String> response = fileController.deleteFileFromFolder(token, folderId, fileId);
+    ResponseEntity<String> response = fileController.deleteFile(mockUser, fileId);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertEquals("File deleted successfully", response.getBody());
-    verify(fileServiceImpl, times(1)).deleteFileFromFolder(token, folderId, fileId);
+    verify(fileServiceImpl, times(1)).deleteFile(mockUser, fileId);
   }
 
   @Test
   void testMoveFileToAnotherFolder() {
 
     UUID currentFolderId = UUID.randomUUID();
-    UUID fileId = UUID.randomUUID();
     UUID targetFolderId = UUID.randomUUID();
     doNothing()
         .when(fileServiceImpl)
-        .moveFileToAnotherFolder(token, currentFolderId, fileId, targetFolderId);
+        .moveFileToAnotherFolder(mockUser, currentFolderId, fileId, targetFolderId);
 
     ResponseEntity<String> response =
-        fileController.moveFileToAnotherFolder(token, currentFolderId, fileId, targetFolderId);
+        fileController.moveFileToAnotherFolder(mockUser, currentFolderId, fileId, targetFolderId);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertEquals("File moved successfully to the target folder.", response.getBody());
 
     verify(fileServiceImpl, times(1))
-        .moveFileToAnotherFolder(token, currentFolderId, fileId, targetFolderId);
+        .moveFileToAnotherFolder(mockUser, currentFolderId, fileId, targetFolderId);
   }
 }
