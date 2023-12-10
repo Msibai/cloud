@@ -1,6 +1,6 @@
 package com.msibai.cloud.controllers;
 
-import com.msibai.cloud.Services.impl.FileServiceImpl;
+import com.msibai.cloud.services.impl.FileServiceImpl;
 import com.msibai.cloud.dtos.FileDto;
 import com.msibai.cloud.dtos.SlimFileDto;
 import com.msibai.cloud.entities.User;

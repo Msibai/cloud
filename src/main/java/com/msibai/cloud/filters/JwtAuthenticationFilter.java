@@ -1,6 +1,6 @@
 package com.msibai.cloud.filters;
 
-import com.msibai.cloud.Services.JwtService;
+import com.msibai.cloud.services.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,6 +14,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
+/** Custom JWT authentication filter to process JWT tokens sent in the Authorization header. */
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
   private final HandlerExceptionResolver exceptionResolver;
 
@@ -25,6 +26,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     this.exceptionResolver = exceptionResolver;
   }
 
+  /**
+   * Performs JWT authentication for each incoming request.
+   *
+   * @param request HTTP request object.
+   * @param response HTTP response object.
+   * @param filterChain Filter chain for request processing.
+   */
   @Override
   protected void doFilterInternal(
       @NonNull HttpServletRequest request,
@@ -34,16 +42,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     final String authHeader = request.getHeader("Authorization");
     final String jwt;
     final String userEmail;
-    try {
 
+    try {
+      // Check if the Authorization header is present and starts with "Bearer "
       if (authHeader == null || !authHeader.startsWith("Bearer ")) {
         filterChain.doFilter(request, response);
         return;
       }
 
+      // Extract JWT token
       jwt = authHeader.substring(7);
       userEmail = jwtService.extractUsername(jwt);
 
+      // Check if the token is valid and set the authentication in SecurityContextHolder
       if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
         UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
 
@@ -55,8 +66,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
           SecurityContextHolder.getContext().setAuthentication(authToken);
         }
       }
+      // Continue with the filter chain
       filterChain.doFilter(request, response);
     } catch (Exception ex) {
+      // Resolve and handle exceptions
       exceptionResolver.resolveException(request, response, null, ex);
     }
   }

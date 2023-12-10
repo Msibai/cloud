@@ -1,9 +1,9 @@
-package com.msibai.cloud.Services.impl;
+package com.msibai.cloud.services.impl;
 
 import static com.msibai.cloud.utilities.FileEncryption.*;
 import static com.msibai.cloud.utilities.Utility.*;
 
-import com.msibai.cloud.Services.FileService;
+import com.msibai.cloud.services.FileService;
 import com.msibai.cloud.dtos.FileDto;
 import com.msibai.cloud.dtos.SlimFileDto;
 import com.msibai.cloud.entities.File;

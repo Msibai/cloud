@@ -1,4 +1,4 @@
-package com.msibai.cloud.Services;
+package com.msibai.cloud.services;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;

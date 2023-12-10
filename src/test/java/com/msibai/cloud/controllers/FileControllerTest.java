@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import com.msibai.cloud.Services.impl.FileServiceImpl;
+import com.msibai.cloud.services.impl.FileServiceImpl;
 import com.msibai.cloud.dtos.FileDto;
 import com.msibai.cloud.dtos.SlimFileDto;
 import com.msibai.cloud.entities.User;

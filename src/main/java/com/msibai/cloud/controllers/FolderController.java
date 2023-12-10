@@ -1,6 +1,6 @@
 package com.msibai.cloud.controllers;
 
-import com.msibai.cloud.Services.impl.FolderServiceImpl;
+import com.msibai.cloud.services.impl.FolderServiceImpl;
 import com.msibai.cloud.dtos.FolderDto;
 import com.msibai.cloud.entities.User;
 import java.util.List;
